@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            body {
+                width: 300px;
+                height: 350px;
+                font-family: "Verdana", sans-serif;
+                padding: 10px;
+                margin: 0px;
+            }
+
+            p {
+                text-align: justify;
+            }
+
+            div.form {
+                border-top: 2px solid #3A3A3A;
+                padding-top: 10px;
+            }
+
+            #loading {
+                background: #FFFFFF;
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                z-index: 100;
+                opacity: .95;
+                text-align: center;
+                padding: 75px 0px;
+            }
+
+            #toaster {
+                width: 100%;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                z-index: 100;
+                text-align: justify;
+            }
+
+            #toaster div {
+                background: #bd362f;
+                border-radius: 5px;
+                margin: 3px;
+                padding: 5px;
+            }
+
+            #toaster span {
+                padding: 10px 5px;
+                display: inline-block;
+                color: #FFFFFF !important;
+            }
+
+            .hide {
+                display: none;
+            }
+
+            label {
+                display: block;
+            }
+
+            input {
+                width: 250px;
+                border-radius: 5px;
+                border: solid 1px #7F7F7F;
+                margin: 10px 20px;
+                height: 2em;
+                padding: 2px;
+            }
+
+            button {
+                border-radius: 5px;
+                background-color: #3A3A3A;
+                border: none;
+                color: #FFFFFF;
+                padding: 5px 10px;
+                margin-top: 10px;
+                height: 2em;
+            }
+        </style>
+    </head>
+    <body>
+        <p>Welcome to the Toggl to OpenAir timesheet extension.  Please set the information below and click create!</p>
+        <p>API key is found within your <a href="https://toggl.com/app/profile" target="_blank">Toggl profile</a>.</p>
+        <p>The start date is the date timesheet entries are pulled from Toggl.  An end date is automatically set as six days from the start
+        date to pull a full week.</p>
+        <div class="form">
+            <label for="apiKey">API Key:</label>
+            <input id="apiKey" placeholder="API Key" type="text">
+            <label for="startDate">Start Date:</label>
+            <input id="startDate" type="date">
+            <button id="createTimesheet">Create!</button>
+        </div>
+        <div id="loading" class="hide">
+            <img src="Pacman-1s-200px.gif" alt="loading" />
+        </div>
+        <div id="toaster" class="hide">
+            <div>
+                <span></span>
+            </div>
+        </div>
+    </body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="popup.js"></script>
+</html>
