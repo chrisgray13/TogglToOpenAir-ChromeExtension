@@ -100,7 +100,7 @@ function createTimesheet(timesheetData) {
             }
         }
 
-        setTaskInfo(row, dateEntry.client, dateEntry.project, "Non-Billable");
+        setTaskInfo(row, dateEntry.client, dateEntry.project, dateEntry.is_billable);
         row = row + 1;
     }
 
@@ -124,7 +124,7 @@ function selectOptionForControl(selectCtrl, optionValue) {
     return matchingElement;
 }
 
-function setTaskInfo(row, project, task, timeType) {
+function setTaskInfo(row, project, task, isBillable) {
     let selectOption = function (selectId, selectValue) {
         let selected = false;
         let selectCtrl = document.getElementById(selectId);
@@ -145,13 +145,13 @@ function setTaskInfo(row, project, task, timeType) {
                 } else if ("fireEvent" in selectCtrl) {
                     selectCtrl.fireEvent("onchange");
                 } else {
-                    setError("Not sure how to call change on this select => ", selectId, selectValue);
+                    console.log("Not sure how to call change on this select => ", selectId, selectValue);
                 }
             } else {
-                setError("Could not find specific option for control => ", selectId, selectValue);
+                console.log("Could not find specific option for control => ", selectId, selectValue);
             }
         } else {
-            setError("Could not find control => ", selectId);
+            console.log("Could not find control => ", selectId);
         }
 
         if (!selected) {
@@ -163,12 +163,16 @@ function setTaskInfo(row, project, task, timeType) {
 
     console.log("Setting project and task on row => ", project, task, row);
 
+    // Used to find tasks that are labeled Billable
+    // E.g. Billable task, billable task, my task - billable, my task [Billable]
+    let reg = new RegExp(/\W*billable\W*/i);
+
     // Set the Project
     selectOption("ts_c1_r" + row, project);
     // Set the Task
-    selectOption("ts_c2_r" + row, task);
+    selectOption("ts_c2_r" + row, task.replace(reg, ""));
     // Set the Time type
-    selectOption("ts_c3_r" + row, timeType);
+    selectOption("ts_c3_r" + row, (isBillable === true || reg.test(task)) ? "Billable Time" : "Non-Billable");
 }
 
 function addHours(row, dayOfWeek, day, hours, description) {
