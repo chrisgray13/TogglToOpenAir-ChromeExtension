@@ -8,29 +8,46 @@ function setError(msg) {
         }
     }
 
-    errors += "\n" + msg;
+    errors += "\n- " + msg;
 
     console.log(msg);
 }
 
 (function addListeners() {
     chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-        if (request.loading === true) {
+        if (request.action === "loading") {
             let bodyElement = document.getElementsByTagName("body")[0];
             bodyElement.innerHTML = bodyElement.innerHTML +
                 "<div id='loadingImage' style='background: #3F3F3F;width: 100%;height: 100%;position: absolute;top: 0px;left: 0px;z-index: 10000;opacity: .8;text-align: center;'><span style='font-size: 20em;color: #000000;padding: 20px;'>Loading</span></div>";
 
             sendResponse({ success: true });
-        } else if (request.timesheetData) {
+        } else if (request.action === "loadTimesheetData") {
             errors = "";
 
-            createTimesheet(request.timesheetData);
+            createTimesheet(request.data);
 
             if (errors) {
                 sendResponse({ success: false, message: errors });
             } else {
                 sendResponse({ success: true });
             }
+        } else if (request.action === "getStartDate") {
+            let startDateString;
+            let dateRange = document.getElementById("timesheet_data_range");
+            if (dateRange) {
+                let datePieces = dateRange.textContent.trim().split(" ");
+                if (datePieces.length === 3) {
+                    let dayPieces = datePieces[1].split("-");
+                    if (dayPieces.length === 2) {
+                        let startDate = new Date(datePieces[0] + " " + dayPieces[0] + " " + datePieces[2]);
+                        startDateString = startDate.toISOString().substring(0, 10);
+                    }
+                }
+            }
+            sendResponse({
+                success: true,
+                startDate: startDateString
+            });
         }
     });
 })();

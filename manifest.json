@@ -5,10 +5,7 @@
     "icons": {
         "48": "48-icon.png"
     },
-    "externally_connectable": {
-        "matches": ["*://*.example.com/*"]
-    },
-    "permissions": ["activeTab", "declarativeContent", "storage", "https://www.toggl.com/"],
+    "permissions": ["activeTab", "declarativeContent", "storage", "webNavigation", "https://www.toggl.com/"],
     "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self'",
     "background": {
         "scripts": ["background.js"],

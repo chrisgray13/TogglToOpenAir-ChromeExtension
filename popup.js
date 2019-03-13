@@ -15,6 +15,18 @@
     });
 })();
 
+(function setupStartDate() {
+    let startDateInput = document.getElementById("startDate");
+    if (startDateInput) {
+        chrome.storage.local.get("startDate", function (data) {
+            let startDateValue = data.startDate || "";
+            if (startDateValue !== "") {
+                startDateInput.value = startDateValue;
+            }
+        });
+    }
+})();
+
 (function addCreateTimesheetHandler() {
     let createTimesheet = document.getElementById("createTimesheet");
 
@@ -23,7 +35,7 @@
         if (msg) {
             setError(msg);
         } else {
-            //sendLoadingMessage();
+            //sendActionToContentScript("loading");
             setVisibility("loading", true);
 
             let apiKeyInput = document.getElementById("apiKey");
@@ -43,9 +55,11 @@
                         } else {
                             timesheetDataResponse.then(function (timesheetData) {
                                 let aggregatedTimesheetData = aggregateTimesheetData(timesheetData);
-                                sendTimesheetData(aggregatedTimesheetData, function (response) {
+                                sendActionToContentScript("loadTimesheetData", aggregatedTimesheetData, function (response) {
                                     setVisibility("loading", false);
-                                    if (response.success) {
+                                    if (response === undefined) {
+                                        console.log("Unable to determine the response for sendTimesheetData");
+                                    } else if (response.success) {
                                         window.close();
                                     } else {
                                         setError(response.message);
@@ -129,25 +143,15 @@ function setError(msg) {
     console.log(msg);
 }
 
-function sendLoadingMessage() {
+function sendActionToContentScript(action, data, callback) {
     chrome.tabs.query({
         active: true,
         currentWindow: true
     }, function (tabs) {
         chrome.tabs.sendMessage(tabs[0].id, {
-            loading: true
-        });
-    });
-}
-
-function sendTimesheetData(timesheetData, completedAction) {
-    chrome.tabs.query({
-        active: true,
-        currentWindow: true
-    }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-            "timesheetData": timesheetData
-        }, completedAction);
+            action: action,
+            data: data
+        }, callback);
     });
 }
 
