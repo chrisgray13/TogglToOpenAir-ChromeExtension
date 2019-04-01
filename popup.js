@@ -58,7 +58,7 @@
                                 sendActionToContentScript("loadTimesheetData", aggregatedTimesheetData, function (response) {
                                     setVisibility("loading", false);
                                     if (response === undefined) {
-                                        console.log("Unable to determine the response for sendTimesheetData");
+                                        setError("Unable to determine the response for sendTimesheetData");
                                     } else if (response.success) {
                                         window.close();
                                     } else {
@@ -136,11 +136,11 @@ function setError(msg) {
             toaster.firstElementChild.firstElementChild.innerText += "\n" + msg;
         }
     } else {
-        console.log("Unable to find toaster.  Reverting to alert");
+        console.log("ERROR: Unable to find toaster.  Reverting to alert");
         alert(msg);
     }
 
-    console.log(msg);
+    console.log("ERROR: " + msg);
 }
 
 function sendActionToContentScript(action, data, callback) {

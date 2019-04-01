@@ -10,7 +10,7 @@ function setError(msg) {
 
     errors += "\n- " + msg;
 
-    console.log(msg);
+    console.log("ERROR: " + msg);
 }
 
 (function addListeners() {
@@ -168,11 +168,50 @@ function setTaskInfo(row, project, task, isBillable) {
     let reg = new RegExp(/\W*billable\W*/i);
 
     // Set the Project
-    selectOption("ts_c1_r" + row, project);
-    // Set the Task
-    selectOption("ts_c2_r" + row, task.replace(reg, ""));
+    let mappedProject = mapProject(project);
+    if (mappedProject) {
+        if (!selectOption("ts_c1_r" + row, mappedProject)) {
+            selectOption("ts_c1_r" + row, project)
+        }
+    } else {
+        selectOption("ts_c1_r" + row, project);
+    }
+
+    // Set the Task - If using isBillable, do not strip billable
+    let strippedTask = isBillable ? task : task.replace(reg, "");
+    if (!selectOption("ts_c2_r" + row, strippedTask)) {
+        strippedTask = stripTask(strippedTask);
+        if (strippedTask) {
+            selectOption("ts_c2_r" + row, strippedTask);
+        }
+    }
+
     // Set the Time type
-    selectOption("ts_c3_r" + row, (isBillable === true || reg.test(task)) ? "Billable Time" : "Non-Billable");
+    selectOption("ts_c3_r" + row, (isBillable || reg.test(task)) ? "Billable Time" : "Non-Billable");
+}
+
+// This is in support of the original project names from the first export
+function mapProject(project) {
+    if (project === "Advanced Solutions") {
+        return "Dept 12 - Advanced Solutions";
+    } else if (project === "Oracle Cloud") {
+        return "Dept 08 - R&D for RFS for Oracle Cloud"
+    } else {
+        return undefined;
+    }
+}
+
+// This is in support of the original task names from the first export
+function stripTask(strippedTask) {
+    let taskParts = strippedTask.split(" - ");
+
+    if (taskParts.length === 1) {
+        return undefined;
+    } else {
+        taskParts.shift();
+
+        return taskParts.join(" - ");
+    }
 }
 
 function addHours(row, dayOfWeek, day, hours, description) {
