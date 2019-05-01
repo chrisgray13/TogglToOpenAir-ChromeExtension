@@ -1,4 +1,5 @@
 var errors;
+var errorCount;
 function setError(msg) {
     for (let i = 1; i < arguments.length - 1; i++) {
         if (i === 1) {
@@ -9,12 +10,16 @@ function setError(msg) {
     }
 
     errors += "\n- " + msg;
+    errorCount++;
 
     console.log("ERROR: " + msg);
 }
 
 (function addListeners() {
     chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+        errors = "";
+        errorCount = 0;
+
         if (request.action === "loading") {
             let bodyElement = document.getElementsByTagName("body")[0];
             bodyElement.innerHTML = bodyElement.innerHTML +
@@ -22,15 +27,13 @@ function setError(msg) {
 
             sendResponse({ success: true });
         } else if (request.action === "loadTimesheetData") {
-            errors = "";
-
             createTimesheet(request.data);
 
-            if (errors) {
-                sendResponse({ success: false, message: errors });
-            } else {
-                sendResponse({ success: true });
-            }
+            sendResponse({
+                success: errorCount === 0,
+                message: errors,
+                numberOfErrors: errorCount
+            });
         } else if (request.action === "getStartDate") {
             let startDateString;
             let dateRange = document.getElementById("timesheet_data_range");
@@ -42,10 +45,18 @@ function setError(msg) {
                         let startDate = new Date(datePieces[0] + " " + dayPieces[0] + " " + datePieces[2]);
                         startDateString = startDate.toISOString().substring(0, 10);
                     }
+                } else if (datePieces.length === 6) {
+                    let startDate = new Date(datePieces[0] + " " + datePieces[1] + " " + datePieces[5]);
+                    startDateString = startDate.toISOString().substring(0, 10);
+                } else {
+                    setError("Unable to determine default start date");                    
                 }
             }
+
             sendResponse({
-                success: true,
+                success: errorCount === 0,
+                message: errors,
+                numberOfErrors: errorCount,
                 startDate: startDateString
             });
         }
