@@ -59,6 +59,13 @@ function setError(msg) {
                 numberOfErrors: errorCount,
                 startDate: startDateString
             });
+        } else if (request.action === "getProjects") {
+            sendResponse({
+                success: errorCount === 0,
+                message: errors,
+                numberOfErrors: errorCount,
+                projects: getProjects()
+            });
         }
     });
 })();
@@ -94,9 +101,13 @@ function getDayOfTheWeek(date, sundayPosition) {
     }
 }
 
-function createTimesheet(timesheetData) {
+function getNumberOfTimeEntries() {
     let lastRow = document.querySelector("tr.gridDataEmptyRow select");
-    let row = lastRow === undefined ? 1 : parseInt(lastRow.id.slice(7));
+    return lastRow === undefined ? 0 : parseInt(lastRow.id.slice(7)) - 1;
+}
+
+function createTimesheet(timesheetData) {
+    let row = getNumberOfTimeEntries() + 1;
 
     for (let projectTaskKey in timesheetData) {
         let projectTaskEntries = timesheetData[projectTaskKey];
@@ -280,4 +291,47 @@ function addHours(row, dayOfWeek, day, hours, description) {
     if (!hoursAdded) {
         setError("Unable to add hours for (row, dayOfWeek, day, hours, description) => ", row, dayOfWeek, day, hours, description)
     }
+}
+
+function getProjects() {
+    let timeEntriesLength = getNumberOfTimeEntries();
+    let projects = [];
+
+    for (let i = 0; i < timeEntriesLength; i++) {
+        let projectCtrl = document.getElementById("ts_c1_r" + i);
+        if (projectCtrl) {
+            if (projectCtrl.selectedOptions && (projectCtrl.selectedOptions.length > 0)) {
+                let project = projectCtrl.selectedOptions[0].innerText;
+                let doesProjectExist = false;
+
+                for (let j = 0; j < projects.length; j++) {
+                    if (projects[j].name === project) {
+                        doesProjectExist = true;
+                        break;
+                    }
+                }
+
+                if (!doesProjectExist) {
+                    let taskCtrl = document.getElementById("ts_c2_r" + i);
+                    if (taskCtrl) {
+                        let tasks = [];
+
+                        for (let k = 1; k < taskCtrl.options.length; k++) {
+                            tasks.push({ name: taskCtrl.options[k].innerText });
+                        }
+
+                        projects.push({ name: project, tasks: tasks });
+                    } else {
+                        console.log("Unable to find task control => " + i);
+                    }
+                }
+            } else {
+                console.log("Project control does not have a selected option => " + i);
+            }
+        } else {
+            console.log("Could not find project control => " + i);
+        }
+    }
+
+    return projects;
 }

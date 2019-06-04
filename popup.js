@@ -27,6 +27,73 @@
     }
 })();
 
+(function addImportProjectsHandler() {
+    let importProjects = document.getElementById("importProjects");
+
+    importProjects.addEventListener("click", function () {
+        let msg = validateForm(true, false);
+        if (msg) {
+            setError(msg);
+        } else {
+            setVisibility("loading", true);
+
+            sendActionToContentScript("getProjects", undefined, function (response) {
+                if (response === undefined) {
+                    setError("Unable to determine the response for getProjects");
+                } else if (response.success) {
+                    if (response.projects.length === 0) {
+                        setError("No projects to import!");
+                    } else {
+                        let existingClients = [];
+                        let clientsToCopy = response.projects;
+
+                        let credentialsResponse = getTogglCredentials();
+                        if (credentialsResponse) {
+                            credentialsResponse.then(function (crendentials) {
+                                let clientsResponse = getTogglWorkspaceClients(crendentials.apiKey, crendentials.workspaceId);
+                                if (clientsResponse === undefined) {
+                                    setError("Unable to get clients response");
+                                } else {
+                                    clientsResponse.then(function (clients) {
+                                        if (clients) {
+                                            existingClients = clients;
+                                            let projectsResponse = getTogglWorkspaceProjects(crendentials.apiKey, crendentials.workspaceId);
+                                            if (projectsResponse === undefined) {
+                                                setError("Unable to get projects response");
+                                            } else {
+                                                projectsResponse.then(function (projects) {
+                                                    existingClients = mapToggleProjectsToClients(existingClients, projects);
+
+                                                    clientsToCopy = markNewClientsAndProjects(existingClients, clientsToCopy);
+
+                                                    let creationResponse = createClientsAndProjects(clientsToCopy, crendentials.apiKey, crendentials.workspaceId);
+                                                    if (creationResponse) {
+                                                        creationResponse.then(function (data) {
+                                                            console.log("Done");
+                                                        });
+                                                    }
+                                                }, function (response, textStatus, errorThrown) {
+                                                    setError("Unable to get projects => ", response.status, textStatus, errorThrown);
+                                                })
+                                            }
+                                        }
+                                    }, function (response, textStatus, errorThrown) {
+                                        setError("Unable to get clients => ", response.status, textStatus, errorThrown);
+                                    });
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    setError(response.message);
+                }
+
+                setVisibility("loading", false);
+            });
+        }
+    });
+})();
+
 (function addCreateTimesheetHandler() {
     let createTimesheet = document.getElementById("createTimesheet");
 
@@ -38,63 +105,56 @@
             //sendActionToContentScript("loading");
             setVisibility("loading", true);
 
-            let apiKeyInput = document.getElementById("apiKey");
-            let apiKey = apiKeyInput.value;
+            let credentialsResponse = getTogglCredentials();
+            if (credentialsResponse) {
+                credentialsResponse.then(function (crendentials) {
+                    let startDateCtrl = document.getElementById("startDate");
 
-            let workspaceResponse = getDefaultTogglWorkspace(apiKey, getTogglWorkspace);
-            if (workspaceResponse === undefined) {
-                setError("Unable to get workspace response");
-            } else {
-                workspaceResponse.then(function (workspaceId) {
-                    if (workspaceId) {
-                        let startDateCtrl = document.getElementById("startDate");
-
-                        let timesheetDataResponse = getTimesheetData(apiKey, workspaceId, new Date(startDateCtrl.value));
-                        if (timesheetDataResponse === undefined) {
-                            setError("Unable to get timesheet data response");
-                        } else {
-                            timesheetDataResponse.then(function (timesheetData) {
-                                let aggregatedTimesheetData = aggregateTimesheetData(timesheetData);
-                                sendActionToContentScript("loadTimesheetData", aggregatedTimesheetData, function (response) {
-                                    setVisibility("loading", false);
-                                    if (response === undefined) {
-                                        setError("Unable to determine the response for sendTimesheetData");
-                                    } else if (response.success) {
-                                        window.close();
-                                    } else {
-                                        setError(response.message);
-                                    }
-                                });
-                            }, function (response, textStatus, errorThrown) {
-                                setError("Unable to get timesheet data => ", response.status, textStatus, errorThrown, response.responseJSON.error.message, response.responseJSON.error.tip);
-                            });
-                        }
+                    let timesheetDataResponse = getTimesheetData(crendentials.apiKey, crendentials.workspaceId, new Date(startDateCtrl.value));
+                    if (timesheetDataResponse === undefined) {
+                        setError("Unable to get timesheet data response");
                     } else {
-                        setError("Unable to determine Toggl workspace");
+                        timesheetDataResponse.then(function (timesheetData) {
+                            let aggregatedTimesheetData = aggregateTimesheetData(timesheetData);
+                            sendActionToContentScript("loadTimesheetData", aggregatedTimesheetData, function (response) {
+                                setVisibility("loading", false);
+                                if (response === undefined) {
+                                    setError("Unable to determine the response for sendTimesheetData");
+                                } else if (response.success) {
+                                    window.close();
+                                } else {
+                                    setError(response.message);
+                                }
+                            });
+                        }, function (response, textStatus, errorThrown) {
+                            setError("Unable to get timesheet data => ", response.status, textStatus, errorThrown, response.responseJSON.error.message, response.responseJSON.error.tip);
+                        });
                     }
-                }, function (response, textStatus, errorThrown) {
-                    setError("Unable to get a default workspace => ", response.status, textStatus, errorThrown);
                 });
             }
         }
     });
 })();
 
-function validateForm() {
+function validateForm(apiKeyRequired, startDateRequired) {
     let msg = "";
 
-    let apiKeyInput = document.getElementById("apiKey");
-    if (!apiKeyInput || !apiKeyInput.value) {
-        msg += "API key is required"
+    if (apiKeyRequired !== false) {
+        let apiKeyInput = document.getElementById("apiKey");
+        if (!apiKeyInput || !apiKeyInput.value) {
+            msg += "API key is required"
+        }
     }
 
-    let startDateInput = document.getElementById("startDate");
-    if (!startDateInput || !startDateInput.value) {
-        if (msg) {
-            msg += "\n";
-        }
+    if (startDateRequired !== false) {
+        let startDateInput = document.getElementById("startDate");
+        if (!startDateInput || !startDateInput.value) {
+            if (msg) {
+                msg += "\n";
+            }
 
-        msg += "Start date is required"
+            msg += "Start date is required"
+        }
     }
 
     return msg;
@@ -155,6 +215,52 @@ function sendActionToContentScript(action, data, callback) {
     });
 }
 
+function getTogglData(url, apiKey) {
+    return $.ajax({
+        dataType: "json",
+        headers: {
+            "Authorization": "Basic " + btoa(apiKey + ":api_token")
+        },
+        method: "GET",
+        url: url,
+    });
+}
+
+function postTogglData(url, apiKey, data) {
+    return $.ajax({
+        data: JSON.stringify(data),
+        dataType: "json",
+        headers: {
+            "Authorization": "Basic " + btoa(apiKey + ":api_token"),
+            "Content-Type": "application/json"
+        },
+        method: "POST",
+        processData: false,
+        url: url
+    });
+}
+
+function getTogglCredentials() {
+    let apiKeyInput = document.getElementById("apiKey");
+    let apiKey = apiKeyInput.value;
+
+    let workspaceResponse = getDefaultTogglWorkspace(apiKey, getTogglWorkspace);
+    if (workspaceResponse === undefined) {
+        setError("Unable to get workspace response");
+    } else {
+        return workspaceResponse.then(function (workspaceId) {
+            if (workspaceId) {
+                return { apiKey: apiKey, workspaceId: workspaceId };
+            } else {
+                setError("Unable to determine Toggl workspace");
+            }
+        },
+        function (response, textStatus, errorThrown) {
+            setError("Unable to get a default workspace => ", response.status, textStatus, errorThrown);
+        });
+    }
+}
+
 function getDefaultTogglWorkspace(apiKey, workspaceFunction) {
     if (typeof (workspaceFunction) === "function") {
         return workspaceFunction(apiKey).then(function (workspaces, textStatus, response) {
@@ -180,14 +286,127 @@ function getDefaultTogglWorkspace(apiKey, workspaceFunction) {
 }
 
 function getTogglWorkspace(apiKey) {
-    return $.ajax({
-        dataType: "json",
-        headers: {
-            "Authorization": "Basic " + btoa(apiKey + ":api_token")
-        },
-        method: "GET",
-        url: "https://www.toggl.com/api/v8/workspaces",
-    });
+    return getTogglData("https://www.toggl.com/api/v8/workspaces", apiKey);
+}
+
+function getTogglWorkspaceClients(apiKey, workspaceId) {
+    return getTogglData("https://www.toggl.com/api/v8/workspaces/" + workspaceId + "/clients", apiKey);
+}
+
+function createTogglClient(apiKey, workspaceId, clientName) {
+    return postTogglData("https://www.toggl.com/api/v8/clients", apiKey, { client: { name: clientName, wid: workspaceId } });
+}
+
+function getTogglWorkspaceProjects(apiKey, workspaceId) {
+    return getTogglData("https://www.toggl.com/api/v8/workspaces/" + workspaceId + "/projects", apiKey);
+}
+
+function createTogglProject(apiKey, workspaceId, projectName, clientId) {
+    return postTogglData("https://www.toggl.com/api/v8/projects", apiKey, { project: { name: projectName, wid: workspaceId, cid: clientId, is_private: true } });
+}
+
+function mapToggleProjectsToClients(clients, projects) {
+    let mappedClients = [];
+
+    for (let i = 0; i < clients.length; i++) {
+        mappedClients.push({ name: clients[i].name, id: clients[i].id, projects: [] });
+    }
+
+    for (let j = 0; j < projects.length; j++) {
+        for (let k = 0; k < mappedClients.length; k++) {
+            if (mappedClients[k].id === projects[j].cid) {
+                mappedClients[k].projects.push(projects[j].name);
+                break;
+            }
+        }
+    }
+
+    return mappedClients;
+};
+
+function markNewClientsAndProjects(existingClients, clientsToCopy) {
+    for (let i = 0; i < clientsToCopy.length; i++) {
+        for (let j = 0; j < existingClients.length; j++) {
+            if (clientsToCopy[i].name.indexOf(existingClients[j].name) > -1) {
+                clientsToCopy[i].new = false;
+                clientsToCopy[i].id = existingClients[j].id;
+                for (let k = 0; k < clientsToCopy[i].tasks.length; k++) {
+                    for (let l = 0; l < existingClients[j].projects.length; l++) {
+                        if (clientsToCopy[i].tasks[k].name.indexOf(existingClients[j].projects[l]) > -1) {
+                            clientsToCopy[i].tasks[k].new = false;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    return clientsToCopy;
+}
+
+function createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i) {
+    if (i === undefined) {
+        i = 0;
+    }
+
+    for (; i < clientsToCopy.length; i++) {
+        if (clientsToCopy[i].new === false) {
+            let projectsResponse = createProjects(clientsToCopy[i].tasks, clientsToCopy[i].id, apiKey, workspaceId);
+            if (projectsResponse !== undefined) {
+                if (typeof (projectsResponse) === "number") {
+                    continue;                    
+                } else {
+                    return projectsResponse.then(function (result) {
+                        let response = createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i + 1);
+                        if (response) {
+                            return response;
+                        }
+                    });
+                }
+            }
+        } else {
+            return createTogglClient(apiKey, workspaceId, clientsToCopy[i].name).then(function (client) {
+                let projectsResponse = createProjects(clientsToCopy[i].tasks, client.data.id, apiKey, workspaceId);
+                if (projectsResponse !== undefined) {
+                    if (typeof (projectsResponse) === "number") {
+                        return projectsResponse;
+                    } else {
+                        return projectsResponse.then(function (result) {
+                            let response = createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i + 1);
+                            if (response) {
+                                return response;
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+}
+
+function createProjects(projectsToCopy, clientId, apiKey, workspaceId, i) {
+    if (i === undefined) {
+        i = 0;
+    }
+
+    for (; i < projectsToCopy.length; i++) {
+        if (projectsToCopy[i].new === false) {
+            continue;
+        } else {
+            return createTogglProject(apiKey, workspaceId, projectsToCopy[i].name, clientId).then(function (project) {
+                let createProjectsResponse = createProjects(projectsToCopy, clientId, apiKey, workspaceId, i + 1);
+                if (createProjectsResponse !== undefined && typeof (createProjectsResponse) === "number") {
+                    return createProjectsResponse + 1;
+                } else {
+                    return createProjectsResponse;
+                }
+            });
+        }
+    }
+
+    return 0;
 }
 
 function getEndDate(startDate) {
@@ -209,7 +428,7 @@ function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page, re
 
     return detailsResponse.then(function (response) {
         reportDetails = reportDetails.concat(response.data);
-        if ((response.per_page * page) < response.total_count) {
+        if ((response.per_page * (page - 1)) < response.total_count) {
             return getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page + 1, reportDetails);
         } else {
             return reportDetails;
@@ -218,16 +437,9 @@ function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page, re
 }
 
 function getTogglReportDetailsByPage(apiKey, workspaceId, startDate, endDate, page) {
-    return $.ajax({
-        dataType: "json",
-        headers: {
-            "Authorization": "Basic " + btoa(apiKey + ":api_token")
-        },
-        method: "GET",
-        url: "https://toggl.com/reports/api/v2/details?workspace_id=" + workspaceId +
-            "&user_agent=toggle_to_openair&since=" + startDate + "&until=" + endDate +
-            "&page=" + page + "&order_field=date&order_desc=off"
-    });
+    return getTogglData("https://toggl.com/reports/api/v2/details?workspace_id=" + workspaceId +
+        "&user_agent=toggle_to_openair&since=" + startDate + "&until=" + endDate +
+        "&page=" + page + "&order_field=date&order_desc=off", apiKey);
 }
 
 function generateAggregateKey(entry) {
