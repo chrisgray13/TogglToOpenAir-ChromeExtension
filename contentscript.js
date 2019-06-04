@@ -1,7 +1,7 @@
 var errors;
 var errorCount;
 function setError(msg) {
-    for (let i = 1; i < arguments.length - 1; i++) {
+    for (let i = 1; i < arguments.length; i++) {
         if (i === 1) {
             msg += " " + arguments[i].toString();
         } else {
@@ -195,17 +195,27 @@ function setTaskInfo(row, project, task, isBillable) {
         if (!selectOption("ts_c1_r" + row, mappedProject)) {
             selectOption("ts_c1_r" + row, project)
         }
-    } else {
+    } else if (project) {
         selectOption("ts_c1_r" + row, project);
+    } else {
+        setError("Project missing for row => ", row);
+
+        return;
     }
 
     // Set the Task - If using isBillable, do not strip billable
-    let strippedTask = isBillable ? task : task.replace(reg, "");
-    if (!selectOption("ts_c2_r" + row, strippedTask)) {
-        strippedTask = stripTask(strippedTask);
-        if (strippedTask) {
-            selectOption("ts_c2_r" + row, strippedTask);
+    if (task) {
+        let strippedTask = isBillable ? task : task.replace(reg, "");
+        if (!selectOption("ts_c2_r" + row, strippedTask)) {
+            strippedTask = stripTask(strippedTask);
+            if (strippedTask) {
+                selectOption("ts_c2_r" + row, strippedTask);
+            }
         }
+    } else {
+        setError("Task misssing for row => ", row);
+
+        return;
     }
 
     // Set the Time type

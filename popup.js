@@ -406,7 +406,7 @@ function createProjects(projectsToCopy, clientId, apiKey, workspaceId, i) {
         }
     }
 
-    return 0;
+    return { responsePromise: undefined, projectsCreated: 0 };
 }
 
 function getEndDate(startDate) {
@@ -428,7 +428,7 @@ function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page, re
 
     return detailsResponse.then(function (response) {
         reportDetails = reportDetails.concat(response.data);
-        if ((response.per_page * (page - 1)) < response.total_count) {
+        if ((response.per_page * page) < response.total_count) {
             return getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page + 1, reportDetails);
         } else {
             return reportDetails;
