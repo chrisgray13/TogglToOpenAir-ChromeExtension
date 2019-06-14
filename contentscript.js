@@ -307,7 +307,7 @@ function getProjects() {
     let timeEntriesLength = getNumberOfTimeEntries();
     let projects = [];
 
-    for (let i = 0; i < timeEntriesLength; i++) {
+    for (let i = 1; i <= timeEntriesLength; i++) {
         let projectCtrl = document.getElementById("ts_c1_r" + i);
         if (projectCtrl) {
             if (projectCtrl.selectedOptions && (projectCtrl.selectedOptions.length > 0)) {
@@ -325,9 +325,25 @@ function getProjects() {
                     let taskCtrl = document.getElementById("ts_c2_r" + i);
                     if (taskCtrl) {
                         let tasks = [];
-
                         for (let k = 1; k < taskCtrl.options.length; k++) {
                             tasks.push({ name: taskCtrl.options[k].innerText });
+                        }
+
+                        let selectedTask = (taskCtrl.selectedOptions.length > 0) ? taskCtrl.selectedOptions[0].innerText : undefined;
+                        if (selectedTask) {
+                            let billableTypeCtrl = document.getElementById("ts_c3_r" + i);
+                            if (billableTypeCtrl) {
+                                let selectedBillableType = (billableTypeCtrl.selectedOptions.length > 0) ? billableTypeCtrl.selectedOptions[0].innerText : undefined;
+                                if (selectedBillableType === "Billable Time") {
+                                    tasks.push({ name: selectedTask + " [Billable]" });
+                                } else {
+                                    console.log("Unable to find selected billable type => " + i);
+                                }
+                            } else {
+                                console.log("Unable to find billable type control => " + i);
+                            }
+                        } else {
+                            console.log("Unable to find selected task => " + i);
                         }
 
                         projects.push({ name: project, tasks: tasks });
