@@ -1,3 +1,23 @@
+var cancellationToken;
+
+function startPromiseTransaction() {
+    cancellationToken = false;
+}
+
+function cancelPromiseTransaction() {
+    cancellationToken = true;
+}
+
+function handlePromiseTransaction(work) {
+    return function (response) {
+        if (cancellationToken === false) {
+            if (typeof (work) === "function") {
+                return work(response);
+            }
+        }
+    };
+}
+
 // This is to preserve the API key from use to use
 (function setupApiKey() {
     let apiKeyInput = document.getElementById("apiKey");
@@ -36,60 +56,50 @@
             setError(msg);
         } else {
             setVisibility("loading", true);
+            startPromiseTransaction();
 
-            sendActionToContentScript("getProjects", undefined, function (response) {
+            let existingClients = [];
+            let clientsToCopy = [];
+            var credentials = {};
+
+            sendActionToContentScript("getProjects", undefined).then(function (response) {
                 if (response === undefined) {
                     setError("Unable to determine the response for getProjects");
                 } else if (response.success) {
                     if (response.projects.length === 0) {
                         setError("No projects to import!");
                     } else {
-                        let existingClients = [];
-                        let clientsToCopy = response.projects;
+                        clientsToCopy = response.projects;
 
-                        let credentialsResponse = getTogglCredentials();
-                        if (credentialsResponse) {
-                            credentialsResponse.then(function (crendentials) {
-                                let clientsResponse = getTogglWorkspaceClients(crendentials.apiKey, crendentials.workspaceId);
-                                if (clientsResponse === undefined) {
-                                    setError("Unable to get clients response");
-                                } else {
-                                    clientsResponse.then(function (clients) {
-                                        if (clients) {
-                                            existingClients = clients;
-                                            let projectsResponse = getTogglWorkspaceProjects(crendentials.apiKey, crendentials.workspaceId);
-                                            if (projectsResponse === undefined) {
-                                                setError("Unable to get projects response");
-                                            } else {
-                                                projectsResponse.then(function (projects) {
-                                                    existingClients = mapToggleProjectsToClients(existingClients, projects);
-
-                                                    clientsToCopy = markNewClientsAndProjects(existingClients, clientsToCopy);
-
-                                                    let creationResponse = createClientsAndProjects(clientsToCopy, crendentials.apiKey, crendentials.workspaceId);
-                                                    if (creationResponse) {
-                                                        creationResponse.then(function (data) {
-                                                            console.log("Done");
-                                                        });
-                                                    }
-                                                }, function (response, textStatus, errorThrown) {
-                                                    setError("Unable to get projects => ", response.status, textStatus, errorThrown);
-                                                })
-                                            }
-                                        }
-                                    }, function (response, textStatus, errorThrown) {
-                                        setError("Unable to get clients => ", response.status, textStatus, errorThrown);
-                                    });
-                                }
-                            });
-                        }
+                        return getTogglCredentials();
                     }
                 } else {
                     setError(response.message);
                 }
 
+                cancelPromiseTransaction();
+            }).then(handlePromiseTransaction(function (response) {
+                credentials = response;
+
+                return getTogglWorkspaceClients(credentials.apiKey, credentials.workspaceId);
+            })).then(handlePromiseTransaction(function (clients) {
+                existingClients = clients;
+                return getTogglWorkspaceProjects(credentials.apiKey, credentials.workspaceId);
+            }), function (response, textStatus, errorThrown) {
+                setError("Unable to get clients => ", response.status, textStatus, errorThrown);
+                cancelPromiseTransaction();
+            }).then(handlePromiseTransaction(function (projects) {
+                existingClients = mapToggleProjectsToClients(existingClients, projects);
+
+                clientsToCopy = markNewClientsAndProjects(existingClients, clientsToCopy);
+
+                return createClientsAndProjects(clientsToCopy, credentials.apiKey, credentials.workspaceId);
+            }), function () {
+                setError("Unable to get projects => ", response.status, textStatus, errorThrown);
+                cancelPromiseTransaction();
+            }).then(handlePromiseTransaction(function (data) {
                 setVisibility("loading", false);
-            });
+            }));
         }
     });
 })();
@@ -102,36 +112,33 @@
         if (msg) {
             setError(msg);
         } else {
-            //sendActionToContentScript("loading");
             setVisibility("loading", true);
+            startPromiseTransaction();
 
-            let credentialsResponse = getTogglCredentials();
-            if (credentialsResponse) {
-                credentialsResponse.then(function (crendentials) {
+            getTogglCredentials().then(function (credentials) {
+                if (credentials) {
                     let startDateCtrl = document.getElementById("startDate");
 
-                    let timesheetDataResponse = getTimesheetData(crendentials.apiKey, crendentials.workspaceId, new Date(startDateCtrl.value));
-                    if (timesheetDataResponse === undefined) {
-                        setError("Unable to get timesheet data response");
-                    } else {
-                        timesheetDataResponse.then(function (timesheetData) {
-                            let aggregatedTimesheetData = aggregateTimesheetData(timesheetData);
-                            sendActionToContentScript("loadTimesheetData", aggregatedTimesheetData, function (response) {
-                                setVisibility("loading", false);
-                                if (response === undefined) {
-                                    setError("Unable to determine the response for sendTimesheetData");
-                                } else if (response.success) {
-                                    window.close();
-                                } else {
-                                    setError(response.message);
-                                }
-                            });
-                        }, function (response, textStatus, errorThrown) {
-                            setError("Unable to get timesheet data => ", response.status, textStatus, errorThrown, response.responseJSON.error.message, response.responseJSON.error.tip);
-                        });
-                    }
-                });
-            }
+                    return getTimesheetData(credentials.apiKey, credentials.workspaceId, new Date(startDateCtrl.value));
+                } else {
+                    cancelPromiseTransaction();
+                }
+            }).then(handlePromiseTransaction(function (timesheetData) {
+                let aggregatedTimesheetData = aggregateTimesheetData(timesheetData);
+
+                return sendActionToContentScript("loadTimesheetData", aggregatedTimesheetData);
+            })).then(handlePromiseTransaction(function (response) {
+                if (response === undefined) {
+                    setError("Unable to determine the response for sendTimesheetData");
+                } else if (response.success) {
+                    setVisibility("loading", false);
+                    window.close();
+                } else {
+                    setError(response.message);
+                }
+            }), function (response, textStatus, errorThrown) {
+                setError("Unable to get timesheet data => ", response.status, textStatus, errorThrown, response.responseJSON.error.message, response.responseJSON.error.tip);
+            });
         }
     });
 })();
@@ -203,15 +210,18 @@ function setError(msg) {
     console.log("ERROR: " + msg);
 }
 
-function sendActionToContentScript(action, data, callback) {
-    chrome.tabs.query({
-        active: true,
-        currentWindow: true
-    }, function (tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-            action: action,
-            data: data
-        }, callback);
+function sendActionToContentScript(action, data) {
+    return new Promise(function (resolve)
+    {
+        chrome.tabs.query({
+            active: true,
+            currentWindow: true
+        }, function (tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                action: action,
+                data: data
+            }, resolve);
+        });
     });
 }
 
@@ -244,21 +254,16 @@ function getTogglCredentials() {
     let apiKeyInput = document.getElementById("apiKey");
     let apiKey = apiKeyInput.value;
 
-    let workspaceResponse = getDefaultTogglWorkspace(apiKey, getTogglWorkspace);
-    if (workspaceResponse === undefined) {
-        setError("Unable to get workspace response");
-    } else {
-        return workspaceResponse.then(function (workspaceId) {
+    return getDefaultTogglWorkspace(apiKey, getTogglWorkspace)
+        .then(function (workspaceId) {
             if (workspaceId) {
                 return { apiKey: apiKey, workspaceId: workspaceId };
             } else {
                 setError("Unable to determine Toggl workspace");
             }
-        },
-        function (response, textStatus, errorThrown) {
+        }, function (response, textStatus, errorThrown) {
             setError("Unable to get a default workspace => ", response.status, textStatus, errorThrown);
         });
-    }
 }
 
 function getDefaultTogglWorkspace(apiKey, workspaceFunction) {
