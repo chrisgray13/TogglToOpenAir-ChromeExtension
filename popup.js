@@ -352,46 +352,66 @@ function markNewClientsAndProjects(existingClients, clientsToCopy) {
 }
 
 function createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i) {
+    let stats = {
+        clients: 0,
+        projects: 0
+    };
+
+    let incrementStats = function (newStats) {
+        stats.projects += newStats.projects;
+        stats.clients += newStats.clients;
+        return stats;
+    };
+
+    let createDataForClient = function (projectsToCopy, clientId) {
+        let projectsResponse = createProjects(projectsToCopy, clientId, apiKey, workspaceId);
+        if (projectsResponse !== undefined) {
+            if (typeof (projectsResponse) === "number") {
+                stats.projects += projectsResponse;
+                return stats;
+            } else { // It is a Promise
+                return projectsResponse.then(function (projects) {
+                    stats.projects += projects;
+
+                    let response = createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i + 1);
+                    if ((response !== undefined) && (response.clients !== undefined)) {
+                        return incrementStats(response);
+                    } else {
+                        return response.then(function (clientsAndProjects) {
+                            return incrementStats(clientsAndProjects);
+                        })
+                    }
+                });
+            }
+        }
+    };
+
     if (i === undefined) {
         i = 0;
     }
 
     for (; i < clientsToCopy.length; i++) {
         if (clientsToCopy[i].new === false) {
-            let projectsResponse = createProjects(clientsToCopy[i].tasks, clientsToCopy[i].id, apiKey, workspaceId);
-            if (projectsResponse !== undefined) {
-                if (typeof (projectsResponse) === "number") {
-                    continue;                    
-                } else {
-                    return projectsResponse.then(function (result) {
-                        let response = createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i + 1);
-                        if (response) {
-                            return response;
-                        }
-                    });
-                }
+            let result = createDataForClient(clientsToCopy[i].tasks, clientsToCopy[i].id);
+            if ((result !== undefined) && (result.clients !== undefined)) {
+                continue;
+            } else {
+                return result;
             }
         } else {
             return createTogglClient(apiKey, workspaceId, clientsToCopy[i].name).then(function (client) {
-                let projectsResponse = createProjects(clientsToCopy[i].tasks, client.data.id, apiKey, workspaceId);
-                if (projectsResponse !== undefined) {
-                    if (typeof (projectsResponse) === "number") {
-                        return projectsResponse;
-                    } else {
-                        return projectsResponse.then(function (result) {
-                            let response = createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i + 1);
-                            if (response) {
-                                return response;
-                            }
-                        });
-                    }
-                }
+                stats.clients++;
+
+                return createDataForClient(clientsToCopy[i].tasks, client.data.id);
             });
         }
     }
+
+    return stats;
 }
 
 function createProjects(projectsToCopy, clientId, apiKey, workspaceId, i) {
+    var stats = 0;
     if (i === undefined) {
         i = 0;
     }
@@ -405,13 +425,15 @@ function createProjects(projectsToCopy, clientId, apiKey, workspaceId, i) {
                 if (createProjectsResponse !== undefined && typeof (createProjectsResponse) === "number") {
                     return createProjectsResponse + 1;
                 } else {
-                    return createProjectsResponse;
+                    return createProjectsResponse.then(function (projects) {
+                        return projects + 1;
+                    });
                 }
             });
         }
     }
 
-    return { responsePromise: undefined, projectsCreated: 0 };
+    return 0;
 }
 
 function getEndDate(startDate) {
