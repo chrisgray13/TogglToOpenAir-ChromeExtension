@@ -170,19 +170,18 @@ function validateForm(apiKeyRequired, startDateRequired) {
 function setVisibility(controlId, visibility) {
     let control = document.getElementById(controlId);
     if (control) {
+        let classes = control.getAttribute("class");
         if (visibility) {
-            control.setAttribute("class", "");
+            control.setAttribute("class", classes.replace(/hide/g, "").trim());
         } else {
-            control.setAttribute("class", "hide");
+            control.setAttribute("class", classes + " hide");
         }
     } else {
-        console.log("Unable to find the control to set visibility => ", controlId);
+        console.error("Unable to find the control to set visibility => ", controlId);
     }
 }
 
 function setError(msg) {
-    setVisibility("loading", false);
-
     for (let i = 1; i < arguments.length; i++) {
         if (i === 1) {
             msg += " " + arguments[i].toString();
@@ -191,9 +190,22 @@ function setError(msg) {
         }
     }
 
+    displayToast(msg, true);
+}
+
+function displayToast(msg, isError) {
+    setVisibility("loading", false);
+
     let toaster = document.getElementById("toaster");
     if (toaster) {
-        if (toaster.getAttribute("class") === "hide") {
+        if (toaster.getAttribute("class").indexOf("hide") >= 0) {
+            let classes = toaster.getAttribute("class");
+            if (isError) {
+                toaster.setAttribute("class", classes + " error");
+            } else {
+                toaster.setAttribute("class", classes.replace(/error/g, "").trim());
+            }
+
             toaster.firstElementChild.firstElementChild.innerText = msg;
             setVisibility("toaster", true);
             setTimeout(function () {
@@ -203,11 +215,15 @@ function setError(msg) {
             toaster.firstElementChild.firstElementChild.innerText += "\n" + msg;
         }
     } else {
-        console.log("ERROR: Unable to find toaster.  Reverting to alert");
+        console.error("Unable to find toaster.  Reverting to alert");
         alert(msg);
     }
 
-    console.log("ERROR: " + msg);
+    if (isError) {
+        console.error(msg);
+    } else {
+        console.log(msg);
+    }
 }
 
 function sendActionToContentScript(action, data) {
