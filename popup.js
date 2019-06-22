@@ -462,17 +462,29 @@ function getTimesheetData(apiKey, workspaceId, startDate) {
     return getTogglReportDetails(apiKey, workspaceId,
         startDate.toISOString().substring(0, 10),
         getEndDate(startDate).toISOString().substring(0, 10),
-        1, []);
+        1);
 }
 
-function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page, reportDetails) {
+function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page) {
     let detailsResponse =
         getTogglReportDetailsByPage(apiKey, workspaceId, startDate, endDate, page);
 
     return detailsResponse.then(function (response) {
-        reportDetails = reportDetails.concat(response.data);
+        let reportDetails = response.data;
+
+        if (page === 1) {
+            console.log("Toggl report details total count and hours => ", response.total_count, response.total_grand / 1000.0 / 60.0 / 60.0);
+        }
+
         if ((response.per_page * page) < response.total_count) {
-            return getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page + 1, reportDetails);
+            let reportDetailReponse = getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page + 1)
+            if (Array.isArray(reportDetailReponse)) {
+                return reportDetails.concat(reportDetailReponse);
+            } else {
+                return reportDetailReponse.then(function (response) {
+                    return reportDetails.concat(response);
+                });
+            }
         } else {
             return reportDetails;
         }
