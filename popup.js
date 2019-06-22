@@ -98,7 +98,7 @@ function handlePromiseTransaction(work) {
                 setError("Unable to get projects => ", response.status, textStatus, errorThrown);
                 cancelPromiseTransaction();
             }).then(handlePromiseTransaction(function (data) {
-                setVisibility("loading", false);
+                displayToast("Added " + data.clients.toString() + " client(s) and " + data.projects.toString() + " project(s)");
             }));
         }
     });
