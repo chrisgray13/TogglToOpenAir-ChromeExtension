@@ -395,7 +395,7 @@ function createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i) {
                     } else {
                         return response.then(function (clientsAndProjects) {
                             return incrementStats(clientsAndProjects);
-                        })
+                        });
                     }
                 });
             }
