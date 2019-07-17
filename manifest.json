@@ -1,9 +1,12 @@
 {
-    "name": "TogglToOpenAir",
+    "name": "Toggl to OpenAir Timesheets",
+    "short_name": "TogglToOpenAir",
+    "author": "Gray Software Consulting",
     "version": "1.0",
     "description": "Takes time entries from Toggl and adds it to an open timesheet in OpenAir",
     "icons": {
-        "48": "48-icon.png"
+        "48": "48-icon.png",
+        "128": "128-icon.png"
     },
     "permissions": ["activeTab", "declarativeContent", "storage", "webNavigation", "https://www.toggl.com/"],
     "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self'",
