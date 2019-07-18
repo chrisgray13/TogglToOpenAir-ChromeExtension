@@ -242,9 +242,9 @@ function setTaskInfo(row, project, task, isBillable) {
 // This is in support of the original project names from the first export
 function mapProject(project) {
     if (project === "Advanced Solutions") {
-        return "Dept 12 - Advanced Solutions";
+        return "R&D - Advanced Solutions";
     } else if (project === "Oracle Cloud") {
-        return "Dept 08 - R&D for RFS for Oracle Cloud"
+        return "R&D - RFS for Oracle Cloud"
     } else {
         return undefined;
     }
