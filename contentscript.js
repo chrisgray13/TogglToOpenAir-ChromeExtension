@@ -106,6 +106,12 @@ function getNumberOfTimeEntries() {
     return lastRow === undefined ? 0 : parseInt(lastRow.id.slice(7)) - 1;
 }
 
+var timesheetElements = {
+    projects: "ts_c1_r",
+    tasks: "ts_c2_r",
+    timetype: "ts_c3_r"
+};
+
 function createTimesheet(timesheetData) {
     let row = getNumberOfTimeEntries() + 1;
 
@@ -176,10 +182,6 @@ function setTaskInfo(row, project, task, isBillable) {
             console.log("Could not find control => ", selectId);
         }
 
-        if (!selected) {
-            setError("Unable to set selection for (selectId, selectValue) => ",  selectId,  selectValue);
-        }
-
         return selected;
     };
 
@@ -188,38 +190,53 @@ function setTaskInfo(row, project, task, isBillable) {
     // Used to find tasks that are labeled Billable
     // E.g. Billable task, billable task, my task - billable, my task [Billable]
     let reg = new RegExp(/\W*billable\W*/i);
+    let skipTask = false;
 
     // Set the Project
     let mappedProject = mapProject(project);
     if (mappedProject) {
-        if (!selectOption("ts_c1_r" + row, mappedProject)) {
-            selectOption("ts_c1_r" + row, project)
+        if (!selectOption(timesheetElements.projects + row, mappedProject)) {
+            if (!selectOption(timesheetElements.projects + row, project)) {
+                setError("Unable to set project on row " + row + " for " + project);
+                skipTask = true;
+            }
         }
     } else if (project) {
-        selectOption("ts_c1_r" + row, project);
+        if (!selectOption(timesheetElements.projects + row, project)) {
+            setError("Unable to set project on row " + row + " for " + project);
+            skipTask = true;
+        }
     } else {
-        setError("Project missing for row => ", row);
+        setError("Project missing for row ", row);
 
         return;
     }
 
     // Set the Task - If using isBillable, do not strip billable
-    if (task) {
-        let strippedTask = isBillable ? task : task.replace(reg, "");
-        if (!selectOption("ts_c2_r" + row, strippedTask)) {
-            strippedTask = stripTask(strippedTask);
-            if (strippedTask) {
-                selectOption("ts_c2_r" + row, strippedTask);
+    if (!skipTask) {
+        if (task) {
+            let strippedTask = isBillable ? task : task.replace(reg, "");
+            if (!selectOption(timesheetElements.tasks + row, strippedTask)) {
+                strippedTask = stripTask(strippedTask);
+                if (strippedTask) {
+                    if (!selectOption(timesheetElements.tasks + row, strippedTask)) {
+                        setError("Unable to set task on row " + row + " for " + strippedTask);
+                    }
+                } else {
+                    setError("Unable to set task on row " + row + " for " + task);
+                }
             }
-        }
-    } else {
-        setError("Task misssing for row => ", row);
+        } else {
+            setError("Task misssing for row ", row);
 
-        return;
+            return;
+        }
     }
 
     // Set the Time type
-    selectOption("ts_c3_r" + row, (isBillable || reg.test(task)) ? "Billable Time" : "Non-Billable");
+    if (!selectOption(timesheetElements.timetype + row, (isBillable || reg.test(task)) ? "Billable Time" : "Non-Billable")) {
+        setError("Unable to set time type on row ", row);
+    }
 }
 
 // This is in support of the original project names from the first export
@@ -308,7 +325,7 @@ function getProjects() {
     let projects = [];
 
     for (let i = 1; i <= timeEntriesLength; i++) {
-        let projectCtrl = document.getElementById("ts_c1_r" + i);
+        let projectCtrl = document.getElementById(timesheetElements.projects + i);
         if (projectCtrl) {
             if (projectCtrl.selectedOptions && (projectCtrl.selectedOptions.length > 0)) {
                 let project = projectCtrl.selectedOptions[0].innerText;
@@ -322,7 +339,7 @@ function getProjects() {
                 }
 
                 if (!doesProjectExist) {
-                    let taskCtrl = document.getElementById("ts_c2_r" + i);
+                    let taskCtrl = document.getElementById(timesheetElements.tasks + i);
                     if (taskCtrl) {
                         let tasks = [];
                         for (let k = 1; k < taskCtrl.options.length; k++) {
@@ -331,7 +348,7 @@ function getProjects() {
 
                         let selectedTask = (taskCtrl.selectedOptions.length > 0) ? taskCtrl.selectedOptions[0].innerText : undefined;
                         if (selectedTask) {
-                            let billableTypeCtrl = document.getElementById("ts_c3_r" + i);
+                            let billableTypeCtrl = document.getElementById(timesheetElements.timetype + i);
                             if (billableTypeCtrl) {
                                 let selectedBillableType = (billableTypeCtrl.selectedOptions.length > 0) ? billableTypeCtrl.selectedOptions[0].innerText : undefined;
                                 if (selectedBillableType === "Billable Time") {
