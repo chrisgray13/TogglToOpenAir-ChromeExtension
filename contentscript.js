@@ -320,6 +320,13 @@ function addHours(row, dayOfWeek, day, hours, description) {
     }
 }
 
+// This is to reduce the size of the project to make it easier to go through
+function stripProject(project) {
+    let projectParts = project.split(" : ", 2);
+
+    return (projectParts.length === 2) ? projectParts[1] : project;
+}
+
 function getProjects() {
     let timeEntriesLength = getNumberOfTimeEntries();
     let projects = [];
@@ -328,7 +335,7 @@ function getProjects() {
         let projectCtrl = document.getElementById(timesheetElements.projects + i);
         if (projectCtrl) {
             if (projectCtrl.selectedOptions && (projectCtrl.selectedOptions.length > 0)) {
-                let project = projectCtrl.selectedOptions[0].innerText;
+                let project = stripProject(projectCtrl.selectedOptions[0].innerText);
                 let doesProjectExist = false;
 
                 for (let j = 0; j < projects.length; j++) {
