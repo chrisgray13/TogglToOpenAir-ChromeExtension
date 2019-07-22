@@ -320,11 +320,11 @@ function addHours(row, dayOfWeek, day, hours, description) {
     }
 }
 
-// This is to reduce the size of the project to make it easier to go through
-function stripProject(project) {
-    let projectParts = project.split(" : ", 2);
+// This is to reduce the size of the data to make it easier to go through
+function stripProjectAndTask(data) {
+    let dataParts = data.split(" : ", 2);
 
-    return (projectParts.length === 2) ? projectParts[1] : project;
+    return (dataParts.length === 2) ? dataParts[1] : data;
 }
 
 function getProjects() {
@@ -335,7 +335,7 @@ function getProjects() {
         let projectCtrl = document.getElementById(timesheetElements.projects + i);
         if (projectCtrl) {
             if (projectCtrl.selectedOptions && (projectCtrl.selectedOptions.length > 0) && (projectCtrl.selectedOptions[0].innerText.length > 0)) {
-                let project = stripProject(projectCtrl.selectedOptions[0].innerText);
+                let project = stripProjectAndTask(projectCtrl.selectedOptions[0].innerText);
                 let doesProjectExist = false;
 
                 for (let j = 0; j < projects.length; j++) {
@@ -350,7 +350,7 @@ function getProjects() {
                     if (taskCtrl) {
                         let tasks = [];
                         for (let k = 1; k < taskCtrl.options.length; k++) {
-                            tasks.push({ name: taskCtrl.options[k].innerText });
+                            tasks.push({ name: stripProjectAndTask(taskCtrl.options[k].innerText) });
                         }
 
                         let selectedTask = (taskCtrl.selectedOptions.length > 0) ? taskCtrl.selectedOptions[0].innerText : undefined;
