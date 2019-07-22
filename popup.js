@@ -89,7 +89,7 @@ function handlePromiseTransaction(work) {
                 setError("Unable to get clients => ", response.status, textStatus, errorThrown);
                 cancelPromiseTransaction();
             }).then(handlePromiseTransaction(function (projects) {
-                existingClients = mapToggleProjectsToClients(existingClients, projects);
+                existingClients = mapToggleProjectsToClients(existingClients || [],  projects || []);
 
                 clientsToCopy = markNewClientsAndProjects(existingClients, clientsToCopy);
 
