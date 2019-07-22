@@ -348,7 +348,7 @@ function mapToggleProjectsToClients(clients, projects) {
 function markNewClientsAndProjects(existingClients, clientsToCopy) {
     for (let i = 0; i < clientsToCopy.length; i++) {
         for (let j = 0; j < existingClients.length; j++) {
-            if (clientsToCopy[i].name.indexOf(existingClients[j].name) > -1) {
+            if ((clientsToCopy[i].name.length > 0) && (clientsToCopy[i].name.indexOf(existingClients[j].name) > -1)) {
                 clientsToCopy[i].new = false;
                 clientsToCopy[i].id = existingClients[j].id;
                 for (let k = 0; k < clientsToCopy[i].tasks.length; k++) {

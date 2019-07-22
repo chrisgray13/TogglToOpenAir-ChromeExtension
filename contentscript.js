@@ -334,7 +334,7 @@ function getProjects() {
     for (let i = 1; i <= timeEntriesLength; i++) {
         let projectCtrl = document.getElementById(timesheetElements.projects + i);
         if (projectCtrl) {
-            if (projectCtrl.selectedOptions && (projectCtrl.selectedOptions.length > 0)) {
+            if (projectCtrl.selectedOptions && (projectCtrl.selectedOptions.length > 0) && (projectCtrl.selectedOptions[0].innerText.length > 0)) {
                 let project = stripProject(projectCtrl.selectedOptions[0].innerText);
                 let doesProjectExist = false;
 
