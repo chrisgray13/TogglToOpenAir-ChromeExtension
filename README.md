@@ -22,5 +22,6 @@ This requires the following to be useful:
 4) Go to Toggl to get the Toggl API key--this can be found at the bottom of the [Toggl Profile](https://toggl.com/app/profile)
    - Copy and paste the API key into the appropriate textbox in the Chrome Extension
 5) Specify the start date--by default it is the start date of the new timesheet
-6) Click the *Create* button
-7) Review any errors and verify the results
+6) Specify if time entries should be rounded to the nearest quarter hour, i.e. 15 minutes--by default, rounding is off
+7) Click the *Create* button
+8) Review any errors and verify the results
