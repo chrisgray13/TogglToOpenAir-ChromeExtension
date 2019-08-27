@@ -4,7 +4,7 @@
         <style>
             body {
                 width: 300px;
-                height: 430px;
+                height: 540px;
                 font-family: "Verdana", sans-serif;
                 padding: 10px;
                 margin: 0px;
@@ -75,6 +75,17 @@
                 padding: 2px;
             }
 
+            input.checkbox {
+                width: inherit;
+                border-radius: 5px;
+                border: solid 1px #7F7F7F;
+                margin: 10px 20px;
+                height: 1em;
+                padding: 2px;
+                text-align: left;
+                display: block;
+            }
+
             button {
                 border-radius: 5px;
                 background-color: #3A3A3A;
@@ -91,6 +102,7 @@
         <p>API key is found within your <a href="https://toggl.com/app/profile" target="_blank">Toggl profile</a>.</p>
         <p>The start date is the date timesheet entries are pulled from Toggl.  An end date is automatically set as six days from the start
         date to pull a full week.</p>
+        <p>Use the round time checkbox to round your time entries to the nearest quarter hour, i.e. 15 minutes.</p>
         <p>Just getting started? Open a completed timesheet and simply click <a id="importProjects" href="#">Import Projects</a> 
             to import projects into Toggl. Need more help?  Click <a href="https://chrome.google.com/webstore/detail/toggl-to-openair-timeshee/gejgfldgookgefmbfkokffldlklbekgg">Help</a>!</p>
         <div class="form">
@@ -98,6 +110,8 @@
             <input id="apiKey" placeholder="API Key" type="text">
             <label for="startDate">Start Date:</label>
             <input id="startDate" type="date">
+            <label for="roundTime">Round Time:</label>
+            <input id="roundTime" class="checkbox" placeholder="Round Time" type="checkbox">
             <button id="createTimesheet">Create!</button>
         </div>
         <div id="loading" class="hide">

@@ -27,7 +27,7 @@ function setError(msg) {
 
             sendResponse({ success: true });
         } else if (request.action === "loadTimesheetData") {
-            createTimesheet(request.data);
+            createTimesheet(request.data.timesheetData, request.data.roundTime);
 
             sendResponse({
                 success: errorCount === 0,
@@ -70,16 +70,20 @@ function setError(msg) {
     });
 })();
 
-function roundDuration(duration) {
+function roundDuration(duration, roundTime) {
     let roundDecimal = function (value, precision) {
-        return Math.floor(value * (10 ^ precision)) / (10 ^ precision);
+        return Number(Math.round(value + 'e'+ precision) + 'e-' + precision);
     };
 
-    let overage = duration % 0.25000;
-    if (overage >= 0.125000) {
-        return roundDecimal(duration + (0.25000 - overage), 2);
+    if (roundTime === true) {
+        let overage = duration % 0.25000;
+        if (overage >= 0.125000) {
+            return roundDecimal(duration + (0.25000 - overage), 2);
+        } else {
+            return roundDecimal(duration - overage, 2);
+        }
     } else {
-        return roundDecimal(duration - overage, 2);
+        return roundDecimal(duration, 2);
     }
 }
 
@@ -112,7 +116,7 @@ var timesheetElements = {
     timetype: "ts_c3_r"
 };
 
-function createTimesheet(timesheetData) {
+function createTimesheet(timesheetData, roundTime) {
     let row = getNumberOfTimeEntries() + 1;
 
     for (let projectTaskKey in timesheetData) {
@@ -120,7 +124,7 @@ function createTimesheet(timesheetData) {
         let dateEntry = undefined;
         for (let dateKey in projectTaskEntries) {
             dateEntry = projectTaskEntries[dateKey];
-            let roundedDuration = roundDuration(dateEntry.dur);
+            let roundedDuration = roundDuration(dateEntry.dur, roundTime);
             if (roundedDuration <= 0.0) {
                 console.log("Skipping => ", dateEntry.start, dateEntry.client, dateEntry.project, dateEntry.description);
             } else {

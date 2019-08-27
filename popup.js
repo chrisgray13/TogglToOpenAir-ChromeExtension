@@ -47,6 +47,20 @@ function handlePromiseTransaction(work) {
     }
 })();
 
+(function setupRoundTime() {
+    let roundTimeInput = document.getElementById("roundTime");
+    roundTimeInput.addEventListener("change", function () {
+        chrome.storage.sync.set({
+            roundTime: roundTime.checked || false
+        });
+    });
+
+    chrome.storage.sync.get("roundTime", function (data) {
+        let roundTimeValue = data.roundTime || false;
+        roundTimeInput.checked = roundTimeValue;
+    });
+})();
+
 (function addImportProjectsHandler() {
     let importProjects = document.getElementById("importProjects");
 
@@ -126,7 +140,10 @@ function handlePromiseTransaction(work) {
             }).then(handlePromiseTransaction(function (timesheetData) {
                 let aggregatedTimesheetData = aggregateTimesheetData(timesheetData);
 
-                return sendActionToContentScript("loadTimesheetData", aggregatedTimesheetData);
+                let roundTimeInput = document.getElementById("roundTime");
+                let roundTime = roundTimeInput.checked;
+
+                return sendActionToContentScript("loadTimesheetData", { "timesheetData": aggregatedTimesheetData, "roundTime": roundTime });
             })).then(handlePromiseTransaction(function (response) {
                 if (response === undefined) {
                     setError("Unable to determine the response for sendTimesheetData");
