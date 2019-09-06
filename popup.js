@@ -476,10 +476,18 @@ function getEndDate(startDate) {
 }
 
 function getTimesheetData(apiKey, workspaceId, startDate) {
-    return getTogglReportDetails(apiKey, workspaceId,
-        startDate.toISOString().substring(0, 10),
-        getEndDate(startDate).toISOString().substring(0, 10),
-        1);
+    return new Promise(function (resolve) {
+        chrome.storage.local.get("endDate", resolve);
+    }).then(function (data) {
+        return data.endDate || "";
+    }).then(function (endDate) {
+        endDate = (endDate === "") ? getEndDate(startDate) : new Date(endDate);
+
+        return getTogglReportDetails(apiKey, workspaceId,
+            startDate.toISOString().substring(0, 10),
+            endDate.toISOString().substring(0, 10),
+            1);
+    });
 }
 
 function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page) {

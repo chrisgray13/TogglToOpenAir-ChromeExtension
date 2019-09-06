@@ -34,30 +34,17 @@ function setError(msg) {
                 message: errors,
                 numberOfErrors: errorCount
             });
-        } else if (request.action === "getStartDate") {
-            let startDateString;
-            let dateRange = document.getElementById("timesheet_data_range");
-            if (dateRange) {
-                let datePieces = dateRange.textContent.trim().split(" ");
-                if (datePieces.length === 3) {
-                    let dayPieces = datePieces[1].split("-");
-                    if (dayPieces.length === 2) {
-                        let startDate = new Date(datePieces[0] + " " + dayPieces[0] + " " + datePieces[2]);
-                        startDateString = startDate.toISOString().substring(0, 10);
-                    }
-                } else if (datePieces.length === 6) {
-                    let startDate = new Date(datePieces[0] + " " + datePieces[1] + " " + datePieces[5]);
-                    startDateString = startDate.toISOString().substring(0, 10);
-                } else {
-                    setError("Unable to determine default start date");                    
-                }
-            }
+        } else if (request.action === "getTimesheetDateRange") {
+            let dateRange = getTimesheetDateRange();
+
+            let remainingDateRange = getRemainingTimeEntryRange(dateRange.startDate, dateRange.endDate, getFirstEmptyTimeEntryDayOfTheWeek() - 1);
 
             sendResponse({
                 success: errorCount === 0,
                 message: errors,
                 numberOfErrors: errorCount,
-                startDate: startDateString
+                startDate: remainingDateRange.startDate,
+                endDate: remainingDateRange.endDate
             });
         } else if (request.action === "getProjects") {
             sendResponse({
@@ -102,6 +89,64 @@ function getDayOfTheWeek(date, sundayPosition) {
         }
 
         return weekday
+    }
+}
+
+function getTimesheetDateRange() {
+    let dateRange = document.getElementById("timesheet_data_range");
+    let startDate, endDate;
+
+    if (dateRange) {
+        let datePieces = dateRange.textContent.trim().split(" ");
+        if (datePieces.length === 3) {
+            let dayPieces = datePieces[1].split("-");
+            if (dayPieces.length === 2) {
+                startDate = new Date(datePieces[0] + " " + dayPieces[0] + " " + datePieces[2]);
+                endDate = new Date(datePieces[0] + " " + dayPieces[1] + " " + datePieces[2]);
+            }
+        } else if (datePieces.length === 6) {
+            startDate = new Date(datePieces[0] + " " + datePieces[1] + " " + datePieces[5]);
+            endDate = new Date(datePieces[3] + " " + datePieces[4].replace(",", "") + " " + datePieces[5]);
+        } else {
+            setError("Unable to determine default start date");                    
+        }
+    }
+
+    return { startDate: startDate, endDate: endDate };
+}
+
+function getFirstEmptyTimeEntryDayOfTheWeek() {
+    let timeCtrls = document.getElementsByClassName("timesheetInputHour");
+    let lastDayWithTimeEntries = 0;
+
+    if (timeCtrls.length == 0) {
+        console.log("Unable to find any timesheet hour input controls");
+    } else {
+        for (let i = 0, length = timeCtrls.length; i < length; i++) {
+            if (timeCtrls[i].value != "") {
+                lastDayWithTimeEntries = Math.max(lastDayWithTimeEntries, timeCtrls[i].id.substring(4).split("_")[0]);
+            }
+        }
+    }
+
+    if (lastDayWithTimeEntries === 0) {
+        return 0;
+    } else if (lastDayWithTimeEntries === 10) {
+        return -1;
+    } else {
+        return lastDayWithTimeEntries - 2;
+    }
+}
+
+function getRemainingTimeEntryRange(startDate, endDate, startDateOffset) {
+    if (startDate) {
+        if (startDateOffset > 0) {
+            startDate.setDate(startDate.getDate() + startDateOffset);
+        }
+
+        return { startDate: startDate.toISOString().substring(0, 10), endDate: endDate.toISOString().substring(0, 10) };
+    } else {
+        return { startDate: undefined, endDate: undefined };
     }
 }
 

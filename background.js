@@ -24,14 +24,17 @@ chrome.webNavigation.onCompleted.addListener(function (details) {
     // Using setTimeout to give OpenAir a couple of seconds to truly finish loading the DOM
     setTimeout(function () {
         chrome.tabs.sendMessage(details.tabId, {
-            action: "getStartDate"
+            action: "getTimesheetDateRange"
         }, function (response) {
             let startDate = "";
-            if (response) {
-                startDate = response.success ? (response.startDate || "") : "";
+            let endDate = "";
+            if (response && response.success) {
+                startDate = (response.startDate || "");
+                endDate = (response.endDate || "")
             }
             chrome.storage.local.set({
-                startDate: startDate
+                startDate: startDate,
+                endDate: endDate
             });
         });
     }, 2000);
