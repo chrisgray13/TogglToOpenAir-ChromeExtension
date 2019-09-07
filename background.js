@@ -37,6 +37,10 @@ chrome.webNavigation.onCompleted.addListener(function (details) {
                 endDate: endDate
             });
         });
+
+        chrome.tabs.sendMessage(details.tabId, {
+            action: "addDeleteButtonsByDay"
+        }, function (response) { });
     }, 2000);
 }, {
     url: [{

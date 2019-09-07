@@ -3,9 +3,9 @@ var errorCount;
 function setError(msg) {
     for (let i = 1; i < arguments.length; i++) {
         if (i === 1) {
-            msg += " " + arguments[i].toString();
+            msg += " " + ((arguments[i]) ? arguments[i].toString() : "undefined");
         } else {
-            msg += ", " + arguments[i].toString();
+            msg += ", " + ((arguments[i]) ? arguments[i].toString() : "undefined");
         }
     }
 
@@ -13,6 +13,29 @@ function setError(msg) {
     errorCount++;
 
     console.log("ERROR: " + msg);
+}
+
+function setOpenAirNotificationVisibility(visibility, message) {
+    let notification = document.getElementsByClassName("notificationEnvelopeOutside");
+
+    if (notification) {
+        let content = document.getElementsByClassName("notificationTitleContent");
+        if (content) {
+            content[0].innerText = message || "";
+        } else {
+            console.log("Unable to set the OpenAir notification's content => ", message);
+        }
+
+        let style = notification[0].getAttribute("style");
+        if (visibility) {
+            notification[0].setAttribute("style", style.replace(/display:.?none/g, "display: block").trim());
+        } else {
+            notification[0].setAttribute("style", style.replace(/display:.?block/g, "display: none").trim());
+        }
+    } else {
+        console.log("Unable to find the OpenAir notification");
+    }
+
 }
 
 (function addListeners() {
@@ -46,6 +69,10 @@ function setError(msg) {
                 startDate: remainingDateRange.startDate,
                 endDate: remainingDateRange.endDate
             });
+        } else if (request.action === "addDeleteButtonsByDay") {
+            addDeleteButtonsByDay();
+            
+            sendResponse({ success: true });
         } else if (request.action === "getProjects") {
             sendResponse({
                 success: errorCount === 0,
@@ -56,6 +83,36 @@ function setError(msg) {
         }
     });
 })();
+
+function addDeleteButtonsByDay() {
+    let deleteBtn;
+
+    for (let i = 1; i <= 7; i++) {
+        let hourColumnCtrl = document.querySelector("th.timesheetFixedColumn" + i + " span.weekDay");
+        if (hourColumnCtrl) {
+            hourColumnCtrl.innerHTML = hourColumnCtrl.innerHTML + " <i class=\"sprites delete_row\" id=\"deleteDay" + i + "\"></i>";
+            deleteBtn = document.getElementById("deleteDay" + i);
+            deleteBtn.addEventListener("click", deleteDaysTimeEntries);
+        }
+    }
+}
+
+function deleteDaysTimeEntries(event) {
+    var dayOfWeek = 8 - parseInt(event.currentTarget.id.substring(9));
+
+    setOpenAirNotificationVisibility(true, "Deleting time entries!  Takes about 10 seconds.");
+
+    setTimeout(function() {
+        let numberOfRows = document.querySelectorAll("table.timesheet tbody tr").length;
+        let i;
+
+        for (i = 1; i < numberOfRows; i++) {
+            addHours(i, dayOfWeek, undefined, "", "");
+        }
+        
+        setOpenAirNotificationVisibility(false, "");
+    }, 500);
+}
 
 function roundDuration(duration, roundTime) {
     let roundDecimal = function (value, precision) {
@@ -343,7 +400,7 @@ function addHours(row, dayOfWeek, day, hours, description) {
     };
 
     let dateHeaderCtrl = document.querySelector("th.timesheetFixedColumn" + (11 - dateColumn) + " span.monthDay");
-    if (dateHeaderCtrl.textContent == day) {
+    if ((day == undefined) || (dateHeaderCtrl.textContent == day)) {
         let hoursCtrl = document.getElementById("ts_c" + dateColumn + "_r" + row);
         if (hoursCtrl) {
             hoursCtrl.value = hours;
@@ -361,7 +418,11 @@ function addHours(row, dayOfWeek, day, hours, description) {
                 hoursAdded = true;
                 setDescription();
             }
+        } else {
+            console.log("Unable to find hours control");
         }
+    } else {
+        console.log("Day and Date column do not match => ", day, dateColumn)
     }
     
     if (!hoursAdded) {
