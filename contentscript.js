@@ -207,35 +207,61 @@ function getRemainingTimeEntryRange(startDate, endDate, startDateOffset) {
     }
 }
 
-function getNumberOfTimeEntries() {
-    let lastRow = document.querySelector("tr.gridDataEmptyRow select");
-    return lastRow === undefined ? 0 : parseInt(lastRow.id.slice(7)) - 1;
-}
-
 var timesheetElements = {
     projects: "ts_c1_r",
     tasks: "ts_c2_r",
     timetype: "ts_c3_r"
 };
 
+function getNumberOfTimeEntries() {
+    let lastRow = document.querySelector("tr.gridDataEmptyRow select");
+    return lastRow === undefined ? 0 : parseInt(lastRow.id.slice(7)) - 1;
+}
+
+function getProjectTaskTimeTypeRowMappings() {
+    let mappings = {};
+    mappings.length = getNumberOfTimeEntries();
+
+    for (let i = 1; i <= mappings.length; i++) {
+        let mapping = getTaskInfo(i);
+        if (mapping && mapping.project) {
+            let hash = getProjectTaskTimeTypeHash(mapping.project, mapping.task, mapping.timeType);
+
+            if (!mappings[hash]) {
+                mappings[hash] = i;
+            }
+        }
+    }
+
+    return mappings;
+}
+
+function getProjectTaskTimeTypeHash(project, task, timeType) {
+    return project + "|" + task + "|" + timeType;
+}
+
 function createTimesheet(timesheetData, roundTime) {
-    let row = getNumberOfTimeEntries() + 1;
+    let mappings = getProjectTaskTimeTypeRowMappings();
+    let row = (mappings.length || 0) + 1;
 
     for (let projectTaskKey in timesheetData) {
         let projectTaskEntries = timesheetData[projectTaskKey];
         let dateEntry = undefined;
+        let timeEntryRow = row;
         for (let dateKey in projectTaskEntries) {
             dateEntry = projectTaskEntries[dateKey];
             let roundedDuration = roundDuration(dateEntry.dur, roundTime);
             if (roundedDuration <= 0.0) {
                 console.log("Skipping => ", dateEntry.start, dateEntry.client, dateEntry.project, dateEntry.description);
             } else {
-                addHours(row, getDayOfTheWeek(dateEntry.start, 7), getDay(dateEntry.start), roundedDuration, dateEntry.description.replace("'", "\\'"));
+                addHours(timeEntryRow, getDayOfTheWeek(dateEntry.start, 7), getDay(dateEntry.start), roundedDuration, dateEntry.description.replace("'", "\\'"));
             }
         }
 
-        setTaskInfo(row, dateEntry.client, dateEntry.project, dateEntry.is_billable);
-        row = row + 1;
+        if (timeEntryRow === row) {
+            setTaskInfo(row, dateEntry.client, dateEntry.project, dateEntry.is_billable);
+            row = row + 1;
+        }
     }
 
     let loadingImageElement = document.getElementById("loadingImage");
@@ -256,6 +282,37 @@ function selectOptionForControl(selectCtrl, optionValue) {
     }
 
     return matchingElement;
+}
+
+function getTaskInfo(row) {
+    let getSelectedOption = function (selectId) {
+        let selectedOption = undefined;
+
+        let selectCtrl = document.getElementById(selectId);
+        if (selectCtrl) {
+            selectedOption = selectCtrl.selectedOptions[0].text;
+        } else {
+            console.log("Could not find control => ", selectId);
+        }
+
+        return selectedOption;
+    };
+
+    console.log("Getting project and task on row => ", row);
+
+    let taskInfo = {};
+
+    taskInfo.project = getSelectedOption(timesheetElements.projects + row);
+    if (taskInfo.project == undefined) {
+        console.log("Project missing for row ", row);
+
+        return taskInfo;
+    }
+
+    taskInfo.task = getSelectedOption(timesheetElements.tasks + row);
+    taskInfo.timeType = getSelectedOption(timesheetElements.timetype + row);
+
+    return taskInfo;
 }
 
 function setTaskInfo(row, project, task, isBillable) {
