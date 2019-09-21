@@ -18,9 +18,17 @@ function setError(msg) {
 function setOpenAirNotificationVisibility(visibility, message) {
     let notification = document.getElementsByClassName("notificationEnvelopeOutside");
 
-    if (notification) {
+    if (visibility && (!notification || (notification.length === 0))) {
+        try {
+            OA.view.Notification.prototype.create(message, "Confirm", []);
+        } catch { }
+
+        notification = document.getElementsByClassName("notificationEnvelopeOutside");
+    }
+
+    if (notification && (notification.length > 0)) {
         let content = document.getElementsByClassName("notificationTitleContent");
-        if (content) {
+        if (content && (content.length > 0)) {
             content[0].innerText = message || "";
         } else {
             console.log("Unable to set the OpenAir notification's content => ", message);
