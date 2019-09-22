@@ -128,11 +128,16 @@ function roundDuration(duration, roundTime) {
     };
 
     if (roundTime === true) {
-        let overage = duration % 0.25000;
-        if (overage >= 0.125000) {
-            return roundDecimal(duration + (0.25000 - overage), 2);
+        // Automatically round anything below .125 to .25 -- mostly need for billable time
+        if ((duration > 0.000000) && (duration < 0.125000)) {
+            return 0.250000;
         } else {
-            return roundDecimal(duration - overage, 2);
+            let overage = duration % 0.25000;
+            if (overage >= 0.125000) {
+                return roundDecimal(duration + (0.25000 - overage), 2);
+            } else {
+                return roundDecimal(duration - overage, 2);
+            }
         }
     } else {
         return roundDecimal(duration, 2);
