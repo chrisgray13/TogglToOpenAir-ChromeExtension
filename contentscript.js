@@ -227,37 +227,93 @@ function getNumberOfTimeEntries() {
 }
 
 function getProjectTaskTimeTypeRowMappings() {
+    let projects = {};
     let mappings = {};
     mappings.length = getNumberOfTimeEntries();
 
     for (let i = 1; i <= mappings.length; i++) {
-        let mapping = getTaskInfo(i);
+        let mapping = getTaskInfoFromTimesheet(i);
         if (mapping && mapping.project) {
             let hash = getProjectTaskTimeTypeHash(mapping.project, mapping.task, mapping.timeType);
 
             if (!mappings[hash]) {
                 mappings[hash] = i;
             }
+
+            if (projects[mapping.project]) {
+                if (projects[mapping.project].tasks[mapping.task]) {
+                    if (!projects[mapping.project].tasks[mapping.task].timeTypes[mapping.timeType]) {
+                        projects[mapping.project].tasks[mapping.task].timeTypes[mapping.timeType] = i;
+                    }
+                } else {
+                    projects[mapping.project].tasks[mapping.task] = { timeTypes: { [mapping.timeType]: i } };
+                }
+            } else {
+                projects[mapping.project] = { tasks: { [mapping.task]: { timeTypes: { [mapping.timeType]: i } } } };
+            }
         }
     }
 
-    return mappings;
+    return { projects: projects, mappings: mappings };
 }
 
 function getProjectTaskTimeTypeHash(project, task, timeType) {
     return project + "|" + task + "|" + timeType;
 }
 
+function findProjectTaskTimeTypeRow(mappings, project, alternateProject, task, alternateTask, timeType) {
+    let hash = getProjectTaskTimeTypeHash(project, task, timeType);
+    if (mappings.mappings[hash]) {
+        console.log("Found exact project, task, timeType match => ", project, task, timeType);
+
+        return mappings.mappings[hash];
+    } else {
+        let mappedProject = undefined;
+        let mappedTask = undefined;
+
+        for (let mappedProjectName in mappings.projects) {
+            if ((mappedProjectName.indexOf(project) > -1) ||
+                (mappedProjectName.indexOf(alternateProject) > -1)) {
+                mappedProject = mappings.projects[mappedProjectName];
+                break;
+            }
+        }
+
+        if (mappedProject) {
+            for(let mappedTaskName in mappedProject.tasks) {
+                if ((mappedTaskName.indexOf(task) > -1) ||
+                    (mappedTaskName.indexOf(alternateTask) > -1)) {
+                    mappedTask = mappedProject.tasks[mappedTaskName];
+                    break;
+                }
+            }
+        }
+
+        if (mappedTask) {
+            if (mappedTask.timeTypes[timeType]) {
+                console.log("Found partial project, task, timeType match => ", project, task, timeType);
+
+                return mappedTask.timeTypes[timeType];
+            }
+        }
+    }
+
+    console.log("Unable to find project, task, timeType => ", project, task, timeType);
+
+    return undefined;
+}
+
 function createTimesheet(timesheetData, roundTime) {
     let mappings = getProjectTaskTimeTypeRowMappings();
-    let row = (mappings.length || 0) + 1;
+    let row = (mappings.mappings.length || 0) + 1;
 
     for (let projectTaskKey in timesheetData) {
         let projectTaskEntries = timesheetData[projectTaskKey];
-        let dateEntry = undefined;
-        let timeEntryRow = row;
+        let taskInfo = getTaskInfoFromDateEntry(projectTaskKey);
+        let timeEntryRow = findProjectTaskTimeTypeRow(mappings, taskInfo.project, taskInfo.alternateProject, taskInfo.task, taskInfo.alternateTask, taskInfo.timeType) || row;
+
         for (let dateKey in projectTaskEntries) {
-            dateEntry = projectTaskEntries[dateKey];
+            let dateEntry = projectTaskEntries[dateKey];
             let roundedDuration = roundDuration(dateEntry.dur, roundTime);
             if (roundedDuration <= 0.0) {
                 console.log("Skipping => ", dateEntry.start, dateEntry.client, dateEntry.project, dateEntry.description);
@@ -267,7 +323,7 @@ function createTimesheet(timesheetData, roundTime) {
         }
 
         if (timeEntryRow === row) {
-            setTaskInfo(row, dateEntry.client, dateEntry.project, dateEntry.is_billable);
+            setTaskInfoInTimesheet(row, taskInfo.project, taskInfo.alternateProject, taskInfo.task, taskInfo.alternateTask, taskInfo.timeType);
             row = row + 1;
         }
     }
@@ -276,6 +332,25 @@ function createTimesheet(timesheetData, roundTime) {
     if (loadingImageElement) {
         loadingImageElement.remove();
     }
+}
+
+function getTaskInfoFromDateEntry(projectTaskTimeTypeHash) {
+    let hashPieces = projectTaskTimeTypeHash.split("|");
+
+    // Used to find tasks that are labeled Billable
+    // E.g. Billable task, billable task, my task - billable, my task [Billable]
+    let reg = new RegExp(/\W*billable\W*/i);
+
+    // Remove an Billable text that is just for setting the Billing Type unless using IsBillable
+    let cleanTask = hashPieces[2] === "true" ? hashPieces[1] : hashPieces[1].replace(reg, "");
+
+    return {
+        project: hashPieces[0],
+        alternateProject: mapProject(hashPieces[0]),
+        task: cleanTask,
+        alternateTask: stripTask(cleanTask),
+        timeType: (hashPieces[2] === "true" || reg.test(hashPieces[1])) ? "Billable Time" : "Non-Billable"
+    };
 }
 
 function selectOptionForControl(selectCtrl, optionValue) {
@@ -292,7 +367,7 @@ function selectOptionForControl(selectCtrl, optionValue) {
     return matchingElement;
 }
 
-function getTaskInfo(row) {
+function getTaskInfoFromTimesheet(row) {
     let getSelectedOption = function (selectId) {
         let selectedOption = undefined;
 
@@ -323,7 +398,7 @@ function getTaskInfo(row) {
     return taskInfo;
 }
 
-function setTaskInfo(row, project, task, isBillable) {
+function setTaskInfoInTimesheet(row, project, alternateProject, task, alternateTask, timeType) {
     let selectOption = function (selectId, selectValue) {
         let selected = false;
         let selectCtrl = document.getElementById(selectId);
@@ -358,15 +433,11 @@ function setTaskInfo(row, project, task, isBillable) {
 
     console.log("Setting project and task on row => ", project, task, row);
 
-    // Used to find tasks that are labeled Billable
-    // E.g. Billable task, billable task, my task - billable, my task [Billable]
-    let reg = new RegExp(/\W*billable\W*/i);
     let skipTask = false;
 
     // Set the Project
-    let mappedProject = mapProject(project);
-    if (mappedProject) {
-        if (!selectOption(timesheetElements.projects + row, mappedProject)) {
+    if (alternateProject) {
+        if (!selectOption(timesheetElements.projects + row, alternateProject)) {
             if (!selectOption(timesheetElements.projects + row, project)) {
                 setError("Unable to set project on row " + row + " for " + project);
                 skipTask = true;
@@ -383,15 +454,13 @@ function setTaskInfo(row, project, task, isBillable) {
         return;
     }
 
-    // Set the Task - If using isBillable, do not strip billable
+    // Set the Task
     if (!skipTask) {
         if (task) {
-            let strippedTask = isBillable ? task : task.replace(reg, "");
-            if (!selectOption(timesheetElements.tasks + row, strippedTask)) {
-                strippedTask = stripTask(strippedTask);
-                if (strippedTask) {
-                    if (!selectOption(timesheetElements.tasks + row, strippedTask)) {
-                        setError("Unable to set task on row " + row + " for " + strippedTask);
+            if (!selectOption(timesheetElements.tasks + row, task)) {
+                if (alternateTask) {
+                    if (!selectOption(timesheetElements.tasks + row, alternateTask)) {
+                        setError("Unable to set task on row " + row + " for " + alternateTask);
                     }
                 } else {
                     setError("Unable to set task on row " + row + " for " + task);
@@ -405,7 +474,7 @@ function setTaskInfo(row, project, task, isBillable) {
     }
 
     // Set the Time type
-    if (!selectOption(timesheetElements.timetype + row, (isBillable || reg.test(task)) ? "Billable Time" : "Non-Billable")) {
+    if (!selectOption(timesheetElements.timetype + row, timeType)) {
         setError("Unable to set time type on row ", row);
     }
 }

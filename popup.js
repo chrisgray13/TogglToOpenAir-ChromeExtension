@@ -523,7 +523,7 @@ function getTogglReportDetailsByPage(apiKey, workspaceId, startDate, endDate, pa
 }
 
 function generateAggregateKey(entry) {
-    return entry.client + "|" + entry.project;
+    return entry.client + "|" + entry.project + "|" + entry.is_billable.toString();
 }
 
 function aggregateTimesheetData(timesheetData) {
