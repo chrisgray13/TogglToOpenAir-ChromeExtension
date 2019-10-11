@@ -241,20 +241,24 @@ function getProjectTaskTimeTypeRowMappings() {
         if (mapping && mapping.project) {
             let hash = getProjectTaskTimeTypeHash(mapping.project, mapping.task, mapping.timeType);
 
-            if (!mappings[hash]) {
-                mappings[hash] = i;
+            if (mappings[hash]) {
+                mappings[hash].push(i);
+            } else {
+                mappings[hash] = [ i ];
             }
 
             if (projects[mapping.project]) {
                 if (projects[mapping.project].tasks[mapping.task]) {
-                    if (!projects[mapping.project].tasks[mapping.task].timeTypes[mapping.timeType]) {
-                        projects[mapping.project].tasks[mapping.task].timeTypes[mapping.timeType] = i;
+                    if (projects[mapping.project].tasks[mapping.task].timeTypes[mapping.timeType]) {
+                        projects[mapping.project].tasks[mapping.task].timeTypes[mapping.timeType].push(i);
+                    } else {
+                        projects[mapping.project].tasks[mapping.task].timeTypes[mapping.timeType] = [ i ];
                     }
                 } else {
-                    projects[mapping.project].tasks[mapping.task] = { timeTypes: { [mapping.timeType]: i } };
+                    projects[mapping.project].tasks[mapping.task] = { timeTypes: { [mapping.timeType]: [ i ] } };
                 }
             } else {
-                projects[mapping.project] = { tasks: { [mapping.task]: { timeTypes: { [mapping.timeType]: i } } } };
+                projects[mapping.project] = { tasks: { [mapping.task]: { timeTypes: { [mapping.timeType]: [ i ] } } } };
             }
         }
     }
@@ -271,7 +275,7 @@ function findProjectTaskTimeTypeRow(mappings, project, alternateProject, task, a
     if (mappings.mappings[hash]) {
         console.log("Found exact project, task, timeType match => ", project, task, timeType);
 
-        return mappings.mappings[hash];
+        return mappings.mappings[hash].shift();
     } else {
         let mappedProject = undefined;
         let mappedTask = undefined;
@@ -298,7 +302,7 @@ function findProjectTaskTimeTypeRow(mappings, project, alternateProject, task, a
             if (mappedTask.timeTypes[timeType]) {
                 console.log("Found partial project, task, timeType match => ", project, task, timeType);
 
-                return mappedTask.timeTypes[timeType];
+                return mappedTask.timeTypes[timeType].shift();
             }
         }
     }

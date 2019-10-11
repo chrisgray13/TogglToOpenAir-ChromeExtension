@@ -61,6 +61,20 @@ function handlePromiseTransaction(work) {
     });
 })();
 
+(function setupGroupByTask() {
+    let groupByTaskInput = document.getElementById("groupByTask");
+    groupByTaskInput.addEventListener("change", function () {
+        chrome.storage.sync.set({
+            groupByTask: groupByTask.checked || false
+        });
+    });
+
+    chrome.storage.sync.get("groupByTask", function (data) {
+        let groupByTaskValue = data.groupByTask || false;
+        groupByTaskInput.checked = groupByTaskValue;
+    });
+})();
+
 (function addImportProjectsHandler() {
     let importProjects = document.getElementById("importProjects");
 
@@ -138,12 +152,15 @@ function handlePromiseTransaction(work) {
                     cancelPromiseTransaction();
                 }
             }).then(handlePromiseTransaction(function (timesheetData) {
-                let aggregatedTimesheetData = aggregateTimesheetData(timesheetData);
+                let groupByTaskInput = document.getElementById("groupByTask");
+                let groupByTask = groupByTaskInput.checked;
+
+                let aggregatedTimesheetData = aggregateTimesheetData(timesheetData, groupByTask);
 
                 let roundTimeInput = document.getElementById("roundTime");
                 let roundTime = roundTimeInput.checked;
 
-                return sendActionToContentScript("loadTimesheetData", { "timesheetData": aggregatedTimesheetData, "roundTime": roundTime });
+                return sendActionToContentScript("loadTimesheetData", { "timesheetData": aggregatedTimesheetData, "roundTime": roundTime, "groupByTask": groupByTask });
             })).then(handlePromiseTransaction(function (response) {
                 if (response === undefined) {
                     setError("Unable to determine the response for sendTimesheetData");
@@ -522,11 +539,15 @@ function getTogglReportDetailsByPage(apiKey, workspaceId, startDate, endDate, pa
         "&page=" + page + "&order_field=date&order_desc=off", apiKey);
 }
 
-function generateAggregateKey(entry) {
-    return entry.client + "|" + entry.project + "|" + entry.is_billable.toString();
+function generateAggregateKey(entry, groupByTask) {
+    if (groupByTask) {
+        return entry.client + "|" + entry.project + "|" + entry.is_billable.toString();
+    } else {
+        return entry.client + "|" + entry.project + "|" + entry.is_billable.toString() + "|" + entry.description;
+    }
 }
 
-function aggregateTimesheetData(timesheetData) {
+function aggregateTimesheetData(timesheetData, groupByTask) {
     let aggregateData = {};
 
     for (let i = 0, dataLength = timesheetData.length; i < dataLength; i++) {
@@ -534,7 +555,7 @@ function aggregateTimesheetData(timesheetData) {
         entry.start = entry.start.substring(0, 10);
         entry.dur = entry.dur / 3600000.0; // 60 (mins) * 60 (secs) * 1000 (ms)
 
-        let entryKey = generateAggregateKey(entry);
+        let entryKey = generateAggregateKey(entry, groupByTask);
         if (entryKey in aggregateData) {
             let tempAggregate = aggregateData[entryKey];
 
