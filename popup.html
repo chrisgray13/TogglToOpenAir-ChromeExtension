@@ -3,11 +3,11 @@
     <head>
         <style>
             body {
-                width: 300px;
-                height: 540px;
+                width: 320px;
+                height: 580px;
                 font-family: "Verdana", sans-serif;
                 padding: 10px;
-                margin: 0px;
+                margin: 0px 0px 0px 0px;
             }
 
             p {
@@ -17,6 +17,12 @@
             div.form {
                 border-top: 2px solid #3A3A3A;
                 padding-top: 10px;
+            }
+
+            div.group {
+                display: grid;
+                grid-template-columns: 100px 100px 100px;
+                grid-gap: 10px;
             }
 
             #loading {
@@ -67,7 +73,7 @@
             }
 
             input {
-                width: 250px;
+                width: 270px;
                 border-radius: 5px;
                 border: solid 1px #7F7F7F;
                 margin: 10px 20px;
@@ -111,10 +117,16 @@
             <input id="apiKey" placeholder="API Key" type="text">
             <label for="startDate">Start Date:</label>
             <input id="startDate" type="date">
-            <label for="roundTime">Round Time:</label>
-            <input id="roundTime" class="checkbox" placeholder="Round Time" type="checkbox">
-            <label for="groupByTask">Group by Task:</label>
-            <input id="groupByTask" class="checkbox" placeholder="Group by Task" type="checkbox">
+            <div class="group">
+                <div>
+                    <label for="roundTime">Round Time:</label>
+                    <input id="roundTime" class="checkbox" placeholder="Round Time" type="checkbox">
+                </div>
+                <div>
+                    <label for="groupByTask">Group by Task:</label>
+                    <input id="groupByTask" class="checkbox" placeholder="Group by Task" type="checkbox">
+                </div>
+            </div>
             <button id="createTimesheet">Create!</button>
         </div>
         <div id="loading" class="hide">
