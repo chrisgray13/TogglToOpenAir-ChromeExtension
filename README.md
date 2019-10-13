@@ -11,7 +11,7 @@ This requires the following to be useful:
 ###### Tracking time with Toggl:
 1) Download [Toggl](https://toggl.com/)
 2) Create or import Clients and Projects--synonymous with Projects and Tasks in OpenAir
-   - If purchased, use the billable feature in Toggl to mark projects as billable; otherwise, adding "Billable" to Projects treat that time as billable, e.g. Billable Task, billable task, My Project - billable, My Project [Billable]
+   - If purchased, use the billable feature in Toggl to mark projects as billable; otherwise, adding "Billable" to Projects, e.g. Billable Task, billable task, My Project - billable, My Project [Billable], or a time entry's Tags treat that time as billable
    - Import Clients and Projects using an existing timesheet in OpenAir and the TogglToOpenAir instructions
 3) Start using Toggl to track time
 
@@ -23,5 +23,6 @@ This requires the following to be useful:
    - Copy and paste the API key into the appropriate textbox in the Chrome Extension
 5) Specify the start date--by default it is the first date without time entries in a timesheet
 6) Specify if time entries should be rounded to the nearest quarter hour, i.e. 15 minutes--by default, rounding is off
-7) Click the *Create* button
-8) Review any errors and verify the results
+7) Specify if time entries should be grouped by task or description--by default, group by description
+8) Click the *Create* button
+9) Review any errors and verify the results
