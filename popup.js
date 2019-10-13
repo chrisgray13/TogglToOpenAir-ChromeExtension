@@ -554,6 +554,7 @@ function aggregateTimesheetData(timesheetData, groupByTask) {
         let entry = timesheetData[i];
         entry.start = entry.start.substring(0, 10);
         entry.dur = entry.dur / 3600000.0; // 60 (mins) * 60 (secs) * 1000 (ms)
+        entry.is_billable = isEntryBillable(entry);
 
         let entryKey = generateAggregateKey(entry, groupByTask);
         if (entryKey in aggregateData) {
@@ -582,4 +583,14 @@ function aggregateTimesheetData(timesheetData, groupByTask) {
     }
 
     return aggregateData;
+}
+
+function isEntryBillable(entry) {
+    if (entry.is_billable === true) {
+        return true;
+    } else {
+        let reg = new RegExp(/\W*billable\W*/i);
+        
+        return reg.test(entry.tags.join());
+    }
 }
