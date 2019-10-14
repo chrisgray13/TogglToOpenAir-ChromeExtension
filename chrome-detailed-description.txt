@@ -1,0 +1,79 @@
+Are you using Oracle's OpenAir product to enter timesheets?  Creating timesheets can be very laborious.  Doing so is much easier when you combine the Toggl time tracking application with the the Toggl to OpenAir Timesheets (T2OT) Chrome extension.
+
+Toggl makes time tracking easy with its various application forms: desktop, mobile, and web.  Seriously, I tried notebooks, Microsoft Outlook, even my own custom application, and nothing made it easier than Toggl.  You may check out Toggl at their website:  https://toggl.com.
+
+With Toggl keeping track of your time, T2OT makes creating a timesheet as simple as clicking a button. . .seriously. . .well maybe two buttons.  Using existing OpenAir timesheets, T2OT allows you to import the projects and tasks into Toggl.  This makes getting started with Toggl a breeze and makes for better integration to OpenAir.
+
+Regardless of the Toggl plan, T2OT has several features built-in to make creating timesheets easy.  T2OT has automatic time rounding to the nearest quarter hour.  T2OT allows you to setup projects as billable.
+
+When you are ready to create your timesheet for the week, simply login to OpenAir, navigate to the timesheets section, create a new timesheet, click the T2OT Chrome extension icon, and click Create!  After a few seconds while Pacman chomps on the numbers, you are left with a complete timesheet ready to be submitted for approval.
+
+It used to take me hours and hours each month to submit my timesheets.  With the Toggl to OpenAir Timesheet Chrome extension, I am done in minutes!
+
+This is a Google Chrome Extension that provides a way to create a timesheet in OpenAir based on tracking data in Toggl
+
+-------------------------------------
+
+PRE-REQUISITES
+
+This requires the following to be useful:
+
+- Toggl for tracking your time (https://toggl.com)
+
+- OpenAir for submitting a timesheet (https://www.openair.com)
+
+-------------------------------------
+
+INSTRUCTIONS
+
+TRACKING TIME WITH TOGGL:
+
+1) Download Toggl
+
+2) Create or import Clients and Projects--synonymous with Projects and Tasks in OpenAir
+
+   - If purchased, use the billable feature in Toggl to mark projects as billable; otherwise, adding "Billable" to Projects, e.g. Billable Task, billable task, My Project - billable, My Project [Billable], or a time entry's Tags treat that time as billable
+
+   - Import Clients and Projects using an existing timesheet in OpenAir and the TogglToOpenAir instructions
+
+3) Start using Toggl to track time
+
+
+IMPORTING OPENAIR PROJECTS AND TASKS INTO TOGGL:
+
+1) Go to OpenAir
+
+2) Open a completed timesheet
+
+3) Click the TogglToOpenAir icon in the toolbar
+
+4) Go to Toggl to get the Toggl API key--this can be found at the bottom of the Toggl Profile
+
+5) Copy and paste the API key into the appropriate textbox back in the Chrome Extension
+
+6) Click the here link in the instructions
+
+7) Review response and verify the results
+
+
+CREATING AN OPENAIR TIMESHEET WITH TOGGL DATA:
+
+1) Go to OpenAir
+
+2) Create a brand new timesheet
+
+3) Click the TogglToOpenAir icon in the toolbar
+
+4) Go to Toggl to get the Toggl API key--this can be found at the bottom of the Toggl Profile
+
+5) Copy and paste the API key into the appropriate textbox in the Chrome Extension
+
+6) Specify the start date--by default it is the start date of the new timesheet
+
+7) Specify if time entries should be rounded to the nearest quarter hour, i.e. 15 minutes--by default, rounding is off
+
+8) Specify if time entries should be grouped by task or description--by default, group by description
+
+9) Click the Create! button
+
+10) Review any errors and verify the results
