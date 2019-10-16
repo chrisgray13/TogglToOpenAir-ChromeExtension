@@ -23,15 +23,28 @@ function handlePromiseTransaction(work) {
     let apiKeyInput = document.getElementById("apiKey");
     apiKeyInput.addEventListener("change", function () {
         chrome.storage.sync.set({
-            apiKey: apiKey.value || ""
+            apiKey: apiKeyInput.value || ""
         });
+
+        setupWorkspaces(apiKeyInput.value);
     });
 
     chrome.storage.sync.get("apiKey", function (data) {
         let apiKeyValue = data.apiKey || "";
         if (apiKeyValue !== "") {
             apiKeyInput.value = apiKeyValue;
+
+            setupWorkspaces(apiKeyValue);
         }
+    });
+})();
+
+(function watchWorkspace() {
+    let workspaceSelect = document.getElementById("workspace");
+    workspaceSelect.addEventListener("change", function (arg1, arg2, arg3) {
+        chrome.storage.sync.set({
+            workspace: workspaceSelect.options[workspaceSelect.selectedIndex].value
+        });
     });
 })();
 
@@ -99,7 +112,7 @@ function handlePromiseTransaction(work) {
                     } else {
                         clientsToCopy = response.projects;
 
-                        return getTogglCredentials();
+                        return getTogglCredentials(getSelectedTogglWorkspace);
                     }
                 } else {
                     setError(response.message);
@@ -143,7 +156,7 @@ function handlePromiseTransaction(work) {
             setVisibility("loading", true);
             startPromiseTransaction();
 
-            getTogglCredentials().then(function (credentials) {
+            getTogglCredentials(getSelectedTogglWorkspace).then(function (credentials) {
                 if (credentials) {
                     let startDateCtrl = document.getElementById("startDate");
 
@@ -300,11 +313,11 @@ function postTogglData(url, apiKey, data) {
     });
 }
 
-function getTogglCredentials() {
+function getTogglCredentials(workspaceFunction) {
     let apiKeyInput = document.getElementById("apiKey");
     let apiKey = apiKeyInput.value;
 
-    return getDefaultTogglWorkspace(apiKey, getTogglWorkspace)
+    return getDefaultTogglWorkspace(apiKey, workspaceFunction)
         .then(function (workspaceId) {
             if (workspaceId) {
                 return { apiKey: apiKey, workspaceId: workspaceId };
@@ -314,6 +327,63 @@ function getTogglCredentials() {
         }, function (response, textStatus, errorThrown) {
             setError("Unable to get a default workspace => ", response.status, textStatus, errorThrown);
         });
+}
+
+function setupWorkspaces(apiKey) {
+    let workspaceSelect = document.getElementById("workspace");
+    if (workspaceSelect) {
+        for (let i = workspaceSelect.options.length - 1; i > 0; i--) {
+            workspaceSelect.options.remove(i);
+        }
+
+        startPromiseTransaction();
+
+        return getTogglWorkspaces(apiKey).then(handlePromiseTransaction(function (workspaces, textStatus, response) {
+            return new Promise(function(resolve) {
+                chrome.storage.sync.get("workspace", function (data) {
+                    let workspaceValue = data.workspace || "";
+
+                    for (let i = 0; i < workspaces.length; i++) {
+                        workspaces[i].default = workspaces[i].id == workspaceValue;
+                    }
+        
+                    resolve(workspaces);
+                });
+            });
+        }), function (response, textStatus, errorThrown) {
+                if (response.status === 403) {
+                    setError("Unable to login to Toggl.  Please verify API Key.");
+                } else {
+                    setError("Error getting workspaces => ", response.status, textStatus, errorThrown);
+                }
+
+                cancelPromiseTransaction();
+        }).then(handlePromiseTransaction(function(workspaces) {
+            if (workspaces.length == 0) {
+                setError("Unable to find a Toggl workspace");
+            } else {
+                for (let i = 0; i < workspaces.length; i++) {
+                    workspaceSelect.options.add(new Option(workspaces[i].name, workspaces[i].id, false, workspaces[i].default));
+                }
+
+                if (workspaceSelect.selectedIndex === 0 && workspaces.length === 1) {
+                    workspaceSelect.selectedIndex = 1;
+                    workspaceSelect.options[1].selected = true;
+                    if ("createEvent" in document) {
+                        var evt = document.createEvent("HTMLEvents");
+                        if (evt) {
+                            evt.initEvent("change", true, false);
+                            selected = workspaceSelect.dispatchEvent(evt);
+                        }
+                    } else if ("fireEvent" in workspaceSelect) {
+                        workspaceSelect.fireEvent("onchange");
+                    } else {
+                        console.log("Not sure how to call change on workspace select");
+                    }
+                }
+            }
+        }));
+    }
 }
 
 function getDefaultTogglWorkspace(apiKey, workspaceFunction) {
@@ -331,7 +401,11 @@ function getDefaultTogglWorkspace(apiKey, workspaceFunction) {
 
             return workspaceId;
         }, function (response, textStatus, errorThrown) {
-            setError("Error getting workspaces => ", response.status, textStatus, errorThrown);
+            if (response.status === 403) {
+                setError("Unable to login to Toggl.  Please verify API Key.");
+            } else {
+                setError("Error getting workspaces => ", response.status, textStatus, errorThrown);
+            }
         });
     } else {
         setError("workspaceFunction is not a function.  Please pass a function to get a Toggl workspace.");
@@ -340,7 +414,22 @@ function getDefaultTogglWorkspace(apiKey, workspaceFunction) {
     }
 }
 
-function getTogglWorkspace(apiKey) {
+function getSelectedTogglWorkspace() {
+    return new Promise(function (resolve) {
+        let workspaceSelect = document.getElementById("workspace");
+        if (workspaceSelect) {
+            if (workspaceSelect.selectedIndex === 0) {
+                setError("Please select a workspace");
+            } else {
+                return resolve([ { name: workspaceSelect.options[workspaceSelect.selectedIndex].text, id: workspaceSelect.options[workspaceSelect.selectedIndex].value } ]);
+            }
+        } else {
+            setError("Error gettings workspace");
+        }
+    });
+}
+
+function getTogglWorkspaces(apiKey) {
     return getTogglData("https://www.toggl.com/api/v8/workspaces", apiKey);
 }
 
@@ -590,7 +679,7 @@ function isEntryBillable(entry) {
         return true;
     } else {
         let reg = new RegExp(/\W*billable\W*/i);
-        
+
         return reg.test(entry.tags.join());
     }
 }
