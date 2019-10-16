@@ -51,9 +51,11 @@ IMPORTING OPENAIR PROJECTS AND TASKS INTO TOGGL:
 
 5) Copy and paste the API key into the appropriate textbox back in the Chrome Extension
 
-6) Click the here link in the instructions
+6) Specify the workspace if you have more than one
 
-7) Review response and verify the results
+7) Click the here link in the instructions
+
+8) Review response and verify the results
 
 
 CREATING AN OPENAIR TIMESHEET WITH TOGGL DATA:
@@ -68,12 +70,14 @@ CREATING AN OPENAIR TIMESHEET WITH TOGGL DATA:
 
 5) Copy and paste the API key into the appropriate textbox in the Chrome Extension
 
-6) Specify the start date--by default it is the start date of the new timesheet
+6) Specify the workspace if you have more than one
 
-7) Specify if time entries should be rounded to the nearest quarter hour, i.e. 15 minutes--by default, rounding is off
+7) Specify the start date--by default it is the start date of the new timesheet
 
-8) Specify if time entries should be grouped by task or description--by default, group by description
+8) Specify if time entries should be rounded to the nearest quarter hour, i.e. 15 minutes--by default, rounding is off
 
-9) Click the Create! button
+9) Specify if time entries should be grouped by task or description--by default, group by description
 
-10) Review any errors and verify the results
+10) Click the Create! button
+
+11) Review any errors and verify the results
