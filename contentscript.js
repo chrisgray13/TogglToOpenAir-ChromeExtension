@@ -177,6 +177,9 @@ function getTimesheetDateRange() {
         } else if (datePieces.length === 6) {
             startDate = new Date(datePieces[0] + " " + datePieces[1] + " " + datePieces[5]);
             endDate = new Date(datePieces[3] + " " + datePieces[4].replace(",", "") + " " + datePieces[5]);
+        } else if (datePieces.length === 7) {
+            startDate = new Date(datePieces[0] + " " + datePieces[1] + " " + datePieces[2]);
+            endDate = new Date(datePieces[4] + " " + datePieces[5].replace(",", "") + " " + datePieces[6]);
         } else {
             setError("Unable to determine default start date");                    
         }
