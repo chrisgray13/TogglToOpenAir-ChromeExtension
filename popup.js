@@ -100,7 +100,7 @@ function handlePromiseTransaction(work) {
             startPromiseTransaction();
 
             let existingClients = [];
-            let clientsToCopy = [];
+            let projectsToChange = [];
             var credentials = {};
 
             sendActionToContentScript("getProjects", undefined).then(function (response) {
@@ -110,7 +110,7 @@ function handlePromiseTransaction(work) {
                     if (response.projects.length === 0) {
                         setError("No projects to import!");
                     } else {
-                        clientsToCopy = response.projects;
+                        clientsToChange = response.projects;
 
                         return getTogglCredentials(getSelectedTogglWorkspace);
                     }
@@ -132,15 +132,24 @@ function handlePromiseTransaction(work) {
             }).then(handlePromiseTransaction(function (projects) {
                 existingClients = mapToggleProjectsToClients(existingClients || [],  projects || []);
 
-                clientsToCopy = markNewClientsAndProjects(existingClients, clientsToCopy);
+                let dataToChange = markClientsAndProjects(existingClients, clientsToChange);
 
-                return createClientsAndProjects(clientsToCopy, credentials.apiKey, credentials.workspaceId);
-            }), function () {
+                projectsToChange = dataToChange.projectsToChange;
+
+                return createClientsAndProjects(dataToChange.clientsToChange, credentials.apiKey, credentials.workspaceId);
+            }), function (response, textStatus, errorThrown) {
                 setError("Unable to get projects => ", response.status, textStatus, errorThrown);
                 cancelPromiseTransaction();
             }).then(handlePromiseTransaction(function (data) {
                 displayToast("Added " + data.clients.toString() + " client(s) and " + data.projects.toString() + " project(s)");
-            }));
+
+                return changeProjects(projectsToChange, credentials.apiKey);
+            })).then(handlePromiseTransaction(function (data) {
+                displayToast("Archived " + data.archived.toString() + " project(s) and unarchived " + data.unarchived.toString() + " project(s)");
+            }), function (response, textStatus, errorThrown) {
+                setError("Unable to archive projects => ", response.status, textStatus, errorThrown);
+                cancelPromiseTransaction();
+            });
         }
     });
 })();
@@ -313,6 +322,20 @@ function postTogglData(url, apiKey, data) {
     });
 }
 
+function putTogglData(url, apiKey, data) {
+    return $.ajax({
+        data: JSON.stringify(data),
+        dataType: "json",
+        headers: {
+            "Authorization": "Basic " + btoa(apiKey + ":api_token"),
+            "Content-Type": "application/json"
+        },
+        method: "PUT",
+        processData: false,
+        url: url
+    });
+}
+
 function getTogglCredentials(workspaceFunction) {
     let apiKeyInput = document.getElementById("apiKey");
     let apiKey = apiKeyInput.value;
@@ -449,6 +472,14 @@ function createTogglProject(apiKey, workspaceId, projectName, clientId) {
     return postTogglData("https://www.toggl.com/api/v8/projects", apiKey, { project: { name: projectName, wid: workspaceId, cid: clientId, is_private: true } });
 }
 
+function archiveTogglProject(apiKey, projectId) {
+    return putTogglData("https://www.toggl.com/api/v8/projects/" + projectId, apiKey, { project: { is_private: true, active: false } });
+}
+
+function unarchiveTogglProject(apiKey, projectId) {
+    return putTogglData("https://www.toggl.com/api/v8/projects/" + projectId, apiKey, { project: { is_private: true, active: true } });
+}
+
 function mapToggleProjectsToClients(clients, projects) {
     let mappedClients = [];
 
@@ -459,7 +490,7 @@ function mapToggleProjectsToClients(clients, projects) {
     for (let j = 0; j < projects.length; j++) {
         for (let k = 0; k < mappedClients.length; k++) {
             if (mappedClients[k].id === projects[j].cid) {
-                mappedClients[k].projects.push(projects[j].name);
+                mappedClients[k].projects.push({ id: projects[j].id, name: projects[j].name, active: projects[j].active });
                 break;
             }
         }
@@ -468,18 +499,32 @@ function mapToggleProjectsToClients(clients, projects) {
     return mappedClients;
 };
 
-function markNewClientsAndProjects(existingClients, clientsToCopy) {
-    for (let i = 0; i < clientsToCopy.length; i++) {
+function markClientsAndProjects(existingClients, clientsToChange) {
+    let projectsToChange = [];
+
+    for (let i = 0; i < clientsToChange.length; i++) {
         for (let j = 0; j < existingClients.length; j++) {
-            if ((clientsToCopy[i].name.length > 0) && (clientsToCopy[i].name.indexOf(existingClients[j].name) > -1)) {
-                clientsToCopy[i].new = false;
-                clientsToCopy[i].id = existingClients[j].id;
-                for (let k = 0; k < clientsToCopy[i].tasks.length; k++) {
+            if ((clientsToChange[i].name.length > 0) && (clientsToChange[i].name.indexOf(existingClients[j].name) > -1)) {
+                clientsToChange[i].new = false;
+                clientsToChange[i].id = existingClients[j].id;
+
+                // Marking projects that already exist in Toggl
+                for (let k = 0; k < clientsToChange[i].tasks.length; k++) {
                     for (let l = 0; l < existingClients[j].projects.length; l++) {
-                        if (clientsToCopy[i].tasks[k].name.indexOf(existingClients[j].projects[l]) > -1) {
-                            clientsToCopy[i].tasks[k].new = false;
+                        if (clientsToChange[i].tasks[k].name.indexOf(existingClients[j].projects[l].name) > -1) {
+                            clientsToChange[i].tasks[k].new = false;
+                            existingClients[j].projects[l].keep = true;
                             break;
                         }
+                    }
+                }
+
+                // Looping through to add the projects that need to be archived/unarchived
+                for (let m = 0; m < existingClients[j].projects.length; m++) {
+                    if (existingClients[j].projects[m].keep === undefined) {
+                        projectsToChange.push({ projectId: existingClients[j].projects[m].id, active: false });
+                    } else if (existingClients[j].projects[m].keep === true && existingClients[j].projects[m].active === false) {
+                        projectsToChange.push({ projectId: existingClients[j].projects[m].id, active: true });
                     }
                 }
                 break;
@@ -487,7 +532,7 @@ function markNewClientsAndProjects(existingClients, clientsToCopy) {
         }
     }
 
-    return clientsToCopy;
+    return { clientsToChange: clientsToChange, projectsToChange: projectsToChange };
 }
 
 function createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i) {
@@ -550,16 +595,21 @@ function createClientsAndProjects(clientsToCopy, apiKey, workspaceId, i) {
 }
 
 function createProjects(projectsToCopy, clientId, apiKey, workspaceId, i) {
-    var stats = 0;
+    let projectHandlerResponse;
+
     if (i === undefined) {
         i = 0;
     }
 
     for (; i < projectsToCopy.length; i++) {
-        if (projectsToCopy[i].new === false) {
+        if (projectsToCopy[i].new === false || projectsToCopy[i].active !== undefined) {
             continue;
         } else {
-            return createTogglProject(apiKey, workspaceId, projectsToCopy[i].name, clientId).then(function (project) {
+            projectHandlerResponse = createTogglProject(apiKey, workspaceId, projectsToCopy[i].name, clientId);
+        }
+
+        if (projectHandlerResponse !== undefined) {
+            return projectHandlerResponse.then(function (project) {
                 let createProjectsResponse = createProjects(projectsToCopy, clientId, apiKey, workspaceId, i + 1);
                 if (createProjectsResponse !== undefined && typeof (createProjectsResponse) === "number") {
                     return createProjectsResponse + 1;
@@ -573,6 +623,50 @@ function createProjects(projectsToCopy, clientId, apiKey, workspaceId, i) {
     }
 
     return 0;
+}
+
+function changeProjects(projectsToChange, apiKey, stats, i) {
+
+
+    if (i === undefined) {
+        i = 0;
+    }
+
+    if (stats === undefined) {
+        stats = { archived: 0, unarchived: 0 };
+    }
+
+    for (; i < projectsToChange.length; i++) {
+        if (projectsToChange[i].active === true) {
+            return unarchiveTogglProject(apiKey, projectsToChange[i].projectId).then(function (project) {
+                let createProjectsResponse = changeProjects(projectsToChange, apiKey, stats, i + 1);
+                if (createProjectsResponse !== undefined && (createProjectsResponse.unarchived !== undefined)) {
+                    stats.unarchived = stats.unarchived + 1;
+                    return stats;
+                } else {
+                    return createProjectsResponse.then(function (tempStats) {
+                        tempStats.unarchived = tempStats.unarchived + 1;
+                        return tempStats;
+                    });
+                }
+            });
+        } else {
+            return archiveTogglProject(apiKey, projectsToChange[i].projectId).then(function (project) {
+                let createProjectsResponse = changeProjects(projectsToChange, apiKey, stats, i + 1);
+                if (createProjectsResponse !== undefined && (createProjectsResponse.archived !== undefined)) {
+                    stats.archived = stats.archived + 1;
+                    return stats;
+                } else {
+                    return createProjectsResponse.then(function (tempStats) {
+                        tempStats.archived = tempStats.archived + 1;
+                        return tempStats;
+                    });
+                }
+            });
+        }
+    }
+
+    return { archived: 0, unarchived: 0 };
 }
 
 function getEndDate(startDate) {
