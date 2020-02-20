@@ -9,11 +9,10 @@ chrome.runtime.onInstalled.addListener(function () {
         chrome.declarativeContent.onPageChanged.addRules([{
             conditions: [new chrome.declarativeContent.PageStateMatcher({
                 pageUrl: {
-                    urlMatches: 'https://www.openair.com/timesheet.pl',
-                    queryContains: 'timesheet_id',
-                    urlContains: 'action=grid'
-                },
-            })
+                    urlContains: 'action=grid',
+                    urlMatches: 'https://.*\.openair\.com/timesheet.pl?.*timesheet_id=*'
+                                        },
+                })
             ],
             actions: [new chrome.declarativeContent.ShowPageAction()]
         }]);
@@ -44,8 +43,7 @@ chrome.webNavigation.onCompleted.addListener(function (details) {
     }, 2000);
 }, {
     url: [{
-        urlMatches: 'https://www.openair.com/timesheet.pl',
-        queryContains: 'timesheet_id',
-        urlContains: 'action=grid'
+        urlContains: 'action=grid',
+        urlMatches: 'https://.*\.openair\.com/timesheet.pl?.*timesheet_id=*'
     }]
 });
