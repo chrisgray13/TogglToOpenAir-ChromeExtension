@@ -165,11 +165,13 @@ function handlePromiseTransaction(work) {
             setVisibility("loading", true);
             startPromiseTransaction();
 
+            let timeEntryHandler = new TimeEntryHandler(getTogglReportDetails, getDurationForReportDetails);
+            
             getTogglCredentials(getSelectedTogglWorkspace).then(function (credentials) {
                 if (credentials) {
                     let startDateCtrl = document.getElementById("startDate");
 
-                    return getTimesheetData(credentials.apiKey, credentials.workspaceId, new Date(startDateCtrl.value));
+                    return getTimesheetData(credentials.apiKey, credentials.userId, credentials.workspaceId, timeEntryHandler.getMethod, new Date(startDateCtrl.value));
                 } else {
                     cancelPromiseTransaction();
                 }
@@ -177,7 +179,7 @@ function handlePromiseTransaction(work) {
                 let groupByTaskInput = document.getElementById("groupByTask");
                 let groupByTask = groupByTaskInput.checked;
 
-                let aggregatedTimesheetData = aggregateTimesheetData(timesheetData, groupByTask);
+                let aggregatedTimesheetData = aggregateTimesheetData(timesheetData, groupByTask, timeEntryHandler.getDuration);
 
                 let roundTimeInput = document.getElementById("roundTime");
                 let roundTime = roundTimeInput.checked;
@@ -339,17 +341,32 @@ function putTogglData(url, apiKey, data) {
 function getTogglCredentials(workspaceFunction) {
     let apiKeyInput = document.getElementById("apiKey");
     let apiKey = apiKeyInput.value;
+    let userId;
 
-    return getDefaultTogglWorkspace(apiKey, workspaceFunction)
-        .then(function (workspaceId) {
+    return getTogglUserId(apiKey)
+        .then(function(response) {
+            if (response) {
+                userId = response.data.id;
+
+                return getDefaultTogglWorkspace(apiKey, workspaceFunction)
+            } else {
+                setError("Unable to determine Toggl user id");
+            }
+        }, function (response, textStatus, errorThrown) {
+            setError("Unable to get user id => ", response.status, textStatus, errorThrown);
+        }).then(function (workspaceId) {
             if (workspaceId) {
-                return { apiKey: apiKey, workspaceId: workspaceId };
+                return { apiKey: apiKey, userId: userId, workspaceId: workspaceId };
             } else {
                 setError("Unable to determine Toggl workspace");
             }
         }, function (response, textStatus, errorThrown) {
             setError("Unable to get a default workspace => ", response.status, textStatus, errorThrown);
         });
+}
+
+function getTogglUserId(apiKey) {
+    return getTogglData("https://www.toggl.com/api/v8/me", apiKey);
 }
 
 function setupWorkspaces(apiKey) {
@@ -431,7 +448,8 @@ function getDefaultTogglWorkspace(apiKey, workspaceFunction) {
             }
         });
     } else {
-        setError("workspaceFunction is not a function.  Please pass a function to get a Toggl workspace.");
+        console.log("workspaceFunction is not a function.  Please pass a function to get a Toggl workspace.");
+        setError("Unable to get credentials.  Please submit a bug.");
 
         return undefined;
     }
@@ -675,24 +693,26 @@ function getEndDate(startDate) {
     return endDate;
 }
 
-function getTimesheetData(apiKey, workspaceId, startDate) {
-    return new Promise(function (resolve) {
-        chrome.storage.local.get("endDate", resolve);
-    }).then(function (data) {
-        return data.endDate || "";
-    }).then(function (endDate) {
-        endDate = (endDate === "") ? getEndDate(startDate) : new Date(endDate);
-
-        return getTogglReportDetails(apiKey, workspaceId,
-            startDate.toISOString().substring(0, 10),
-            endDate.toISOString().substring(0, 10),
-            1);
-    });
+function getTimesheetData(apiKey, userId, workspaceId, timesheetDataMethod, startDate) {
+    if (timesheetDataMethod === undefined || typeof(timesheetDataMethod) !== "function") {
+        console.log("Timesheet data method not supplied");
+        setError("Unable to get Toggl time entries.  Please log a bug.");
+    } else {
+        return new Promise(function (resolve) {
+            chrome.storage.local.get("endDate", resolve);
+        }).then(function (data) {
+            return data.endDate || "";
+        }).then(function (endDate) {
+            endDate = (endDate === "") ? getEndDate(startDate) : new Date(endDate);
+    
+            return timesheetDataMethod(apiKey, userId, workspaceId, startDate, endDate, 1);
+        });
+    }
 }
 
-function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page) {
+function getTogglReportDetails(apiKey, userId, workspaceId, startDate, endDate, page) {
     let detailsResponse =
-        getTogglReportDetailsByPage(apiKey, workspaceId, startDate, endDate, page);
+        getTogglReportDetailsByPage(apiKey, userId, workspaceId, startDate, endDate, page);
 
     return detailsResponse.then(function (response) {
         let reportDetails = response.data;
@@ -702,7 +722,7 @@ function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page) {
         }
 
         if ((response.per_page * page) < response.total_count) {
-            let reportDetailReponse = getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page + 1)
+            let reportDetailReponse = getTogglReportDetails(apiKey, userId, workspaceId, startDate, endDate, page + 1)
             if (Array.isArray(reportDetailReponse)) {
                 return reportDetails.concat(reportDetailReponse);
             } else {
@@ -716,10 +736,21 @@ function getTogglReportDetails(apiKey, workspaceId, startDate, endDate, page) {
     });
 }
 
-function getTogglReportDetailsByPage(apiKey, workspaceId, startDate, endDate, page) {
+function getTogglReportDetailsByPage(apiKey, userId, workspaceId, startDate, endDate, page) {
+
     return getTogglData("https://toggl.com/reports/api/v2/details?workspace_id=" + workspaceId +
-        "&user_agent=toggle_to_openair&since=" + startDate + "&until=" + endDate +
+        "&user_agent=toggle_to_openair&user_ids=" + userId +
+        "&since=" + startDate.toISOString().substring(0, 10) +
+        "&until=" + endDate.toISOString().substring(0, 10) +
         "&page=" + page + "&order_field=date&order_desc=off", apiKey);
+}
+
+function getTogglTimeEntries(apiKey, userId, workspaceId, startDate, endDate) {
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    return getTogglData("https://www.toggl.com/api/v8/time_entries?workspace_id=" + workspaceId +
+        "&user_agent=toggle_to_openair&start_date=" + startDate.toJSON() + "&end_date=" + endDate.toJSON(), apiKey);
 }
 
 function generateAggregateKey(entry, groupByTask) {
@@ -730,13 +761,13 @@ function generateAggregateKey(entry, groupByTask) {
     }
 }
 
-function aggregateTimesheetData(timesheetData, groupByTask) {
+function aggregateTimesheetData(timesheetData, groupByTask, getDuration) {
     let aggregateData = {};
 
     for (let i = 0, dataLength = timesheetData.length; i < dataLength; i++) {
         let entry = timesheetData[i];
         entry.start = entry.start.substring(0, 10);
-        entry.dur = entry.dur / 3600000.0; // 60 (mins) * 60 (secs) * 1000 (ms)
+        entry.dur = getDuration(entry);
         entry.is_billable = isEntryBillable(entry);
 
         let entryKey = generateAggregateKey(entry, groupByTask);
@@ -768,6 +799,14 @@ function aggregateTimesheetData(timesheetData, groupByTask) {
     return aggregateData;
 }
 
+function getDurationForReportDetails(entry) {
+    return entry.dur / 3600000.0; // 60 (mins) * 60 (secs) * 1000 (ms)
+}
+
+function getDurationForTimeEntries(entry) {
+    return entry.duration / 3600.0; // 60 (mins) * 60 (secs)
+}
+
 function isEntryBillable(entry) {
     if (entry.is_billable === true) {
         return true;
@@ -776,4 +815,11 @@ function isEntryBillable(entry) {
 
         return reg.test(entry.tags.join());
     }
+}
+
+function TimeEntryHandler(getMethod, getDuration) {
+    let self = this;
+
+    self.getMethod = getMethod;
+    self.getDuration = getDuration;
 }
