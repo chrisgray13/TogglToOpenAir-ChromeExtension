@@ -503,7 +503,7 @@ function createTogglClient(apiKey, workspaceId, clientName) {
 }
 
 function getTogglWorkspaceProjects(apiKey, workspaceId) {
-    return getTogglData("https://www.toggl.com/api/v8/workspaces/" + workspaceId + "/projects", apiKey);
+    return getTogglData("https://www.toggl.com/api/v8/workspaces/" + workspaceId + "/projects?active=both", apiKey);
 }
 
 function createTogglProject(apiKey, workspaceId, projectName, clientId) {
