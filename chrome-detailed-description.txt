@@ -70,14 +70,17 @@ CREATING AN OPENAIR TIMESHEET WITH TOGGL DATA:
 
 5) Copy and paste the API key into the appropriate textbox in the Chrome Extension
 
-6) Specify the workspace if you have more than one
+6) Choose one or more workspaces from which time is to be added from Toggl
 
-7) Specify the start date--by default it is the start date of the new timesheet
+7) Specify the start date--by default it is the first date without time entries in a timesheet
 
-8) Specify if time entries should be rounded to the nearest quarter hour, i.e. 15 minutes--by default, rounding is off
+8) Specify how time entries should be rounded--by default, rounding is _None_:
+   - All:  all entries are rounded to the nearest quarter hour, i.e. 15 minutes, with any time less than 15 minutes being rounded up
+   - Billable only: all billable entries are rounded up to the nearest quarter hour
+   - None: time is not rounded
 
 9) Specify if time entries should be grouped by task or description--by default, group by description
 
-10) Click the Create! button
+10) Click the Sync Time Records! button
 
 11) Review any errors and verify the results

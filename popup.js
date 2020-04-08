@@ -1,3 +1,5 @@
+var roundTimeEnum = { all: 0, billable: 1, none: 2 };
+
 var cancellationToken;
 
 function startPromiseTransaction() {
@@ -72,13 +74,20 @@ function handlePromiseTransaction(work) {
     let roundTimeInput = document.getElementById("roundTime");
     roundTimeInput.addEventListener("change", function () {
         chrome.storage.sync.set({
-            roundTime: roundTime.checked || false
+            roundTime: roundTimeInput.options[roundTimeInput.selectedIndex].value
         });
     });
 
     chrome.storage.sync.get("roundTime", function (data) {
-        let roundTimeValue = data.roundTime || false;
-        roundTimeInput.checked = roundTimeValue;
+        let roundTimeValue = "";
+
+        if (typeof(data.roundTime) === "boolean") {
+            roundTimeValue = data.roundTime ? roundTimeEnum.all : roundTimeEnum.none;
+        } else {
+            roundTimeValue = data.roundTime || roundTimeEnum.none;
+        }
+
+        roundTimeInput.selectedIndex = roundTimeValue;
     });
 })();
 
@@ -190,7 +199,7 @@ function handlePromiseTransaction(work) {
                 let aggregatedTimesheetData = aggregateTimesheetData(timesheetData, groupByTask, timeEntryHandler.getDuration);
 
                 let roundTimeInput = document.getElementById("roundTime");
-                let roundTime = roundTimeInput.checked;
+                let roundTime = roundTimeInput.selectedIndex;
 
                 return sendActionToContentScript("loadTimesheetData", { "timesheetData": aggregatedTimesheetData, "roundTime": roundTime, "groupByTask": groupByTask });
             })).then(handlePromiseTransaction(function (response) {

@@ -1,3 +1,5 @@
+var roundTimeEnum = { all: 0, billable: 1, none: 2 };
+
 var errors;
 var errorCount;
 function setError(msg) {
@@ -122,12 +124,12 @@ function deleteDaysTimeEntries(event) {
     }, 500);
 }
 
-function roundDuration(duration, roundTime) {
+function roundDuration(duration, isBillable, roundTime) {
     let roundDecimal = function (value, precision) {
         return Number(Math.round(value + 'e'+ precision) + 'e-' + precision);
     };
 
-    if (roundTime === true) {
+    if (roundTime === roundTimeEnum.all) {
         // Automatically round anything below .125 to .25 -- mostly need for billable time
         if ((duration > 0.000000) && (duration < 0.125000)) {
             return 0.250000;
@@ -139,6 +141,11 @@ function roundDuration(duration, roundTime) {
                 return roundDecimal(duration - overage, 2);
             }
         }
+    } else if ((roundTime === roundTimeEnum.billable) && isBillable) {
+        // Always round up for billable time
+        let overage = duration % 0.25000;
+
+        return roundDecimal(duration + (0.25000 - overage), 2);
     } else {
         return roundDecimal(duration, 2);
     }
@@ -326,7 +333,7 @@ function createTimesheet(timesheetData, roundTime) {
 
         for (let dateKey in projectTaskEntries) {
             let dateEntry = projectTaskEntries[dateKey];
-            let roundedDuration = roundDuration(dateEntry.dur, roundTime);
+            let roundedDuration = roundDuration(dateEntry.dur, dateEntry.is_billable, roundTime);
             if (roundedDuration <= 0.0) {
                 console.log("Skipping => ", dateEntry.start, dateEntry.client, dateEntry.project, dateEntry.description);
             } else {

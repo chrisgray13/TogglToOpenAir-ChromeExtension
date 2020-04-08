@@ -21,8 +21,12 @@ This requires the following to be useful:
 3) Click the TogglToOpenAir icon in the toolbar
 4) Go to Toggl to get the Toggl API key--this can be found at the bottom of the [Toggl Profile](https://toggl.com/app/profile)
    - Copy and paste the API key into the appropriate textbox in the Chrome Extension
-5) Specify the start date--by default it is the first date without time entries in a timesheet
-6) Specify if time entries should be rounded to the nearest quarter hour, i.e. 15 minutes--by default, rounding is off
-7) Specify if time entries should be grouped by task or description--by default, group by description
-8) Click the *Create* button
-9) Review any errors and verify the results
+5) Choose one or more workspaces from which time is to be added from Toggl
+6) Specify the start date--by default it is the first date without time entries in a timesheet
+7) Specify how time entries should be rounded--by default, rounding is _None_:
+   - All:  all entries are rounded to the nearest quarter hour, i.e. 15 minutes, with any time less than 15 minutes being rounded up
+   - Billable only: all billable entries are rounded up to the nearest quarter hour
+   - None: time is not rounded
+8) Specify if time entries should be grouped by task or description--by default, group by description
+9) Click the *Sync Time Records* button
+10) Review any errors and verify the results
