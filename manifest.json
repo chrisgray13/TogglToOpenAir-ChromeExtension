@@ -2,7 +2,7 @@
     "name": "Toggl to OpenAir Timesheets",
     "short_name": "TogglToOpenAir",
     "author": "Gray Software Consulting",
-    "version": "1.0.16",
+    "version": "1.0.17",
     "description": "Takes time entries from Toggl and adds it to an open timesheet in OpenAir",
     "icons": {
         "48": "48-icon.png",
