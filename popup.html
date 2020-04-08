@@ -4,9 +4,9 @@
         <style>
             body {
                 width: 460px;
-                height: 580px;
+                height: 570px;
                 font-family: "Verdana", sans-serif;
-                padding: 10px;
+                padding: 0px 10px 15px 10px;
                 margin: 0px 0px 0px 0px;
             }
 
@@ -81,6 +81,10 @@
                 padding: 2px;
             }
 
+            select.multiple {
+                height: 3em;
+            }
+
             input.checkbox {
                 width: inherit;
                 border-radius: 5px;
@@ -116,8 +120,7 @@
             <label for="apiKey">API Key:</label>
             <input id="apiKey" placeholder="API Key" type="text">
             <label for="workspace">Workspace:</label>
-            <select id="workspace" placeholder="Workspace">
-                <option>Please select a workspace</option>
+            <select id="workspace" class="multiple" placeholder="Workspace" multiple>
             </select>
             <label for="startDate">Start Date:</label>
             <input id="startDate" type="date">

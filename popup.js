@@ -42,8 +42,16 @@ function handlePromiseTransaction(work) {
 (function watchWorkspace() {
     let workspaceSelect = document.getElementById("workspace");
     workspaceSelect.addEventListener("change", function (arg1, arg2, arg3) {
+        let selectedOptions = "";
+
+        for (let i = 0; i < workspaceSelect.options.length; i++) {
+            if (workspaceSelect.options[i].selected) {
+                selectedOptions = selectedOptions + "|" + workspaceSelect.options[i].value;
+            }
+        }
+
         chrome.storage.sync.set({
-            workspace: workspaceSelect.options[workspaceSelect.selectedIndex].value
+            workspace: selectedOptions.substring(1)
         });
     });
 })();
@@ -384,9 +392,11 @@ function setupWorkspaces(apiKey) {
                     let workspaceValue = data.workspace || "";
 
                     for (let i = 0; i < workspaces.length; i++) {
-                        workspaces[i].default = workspaces[i].id == workspaceValue;
+                        workspaces[i].default = workspaceValue.indexOf(workspaces[i].id) > -1;
+                        console.log(workspaces[i].name, workspaceValue.indexOf(workspaces[i].id) > -1);
+
                     }
-        
+
                     resolve(workspaces);
                 });
             });
@@ -404,6 +414,7 @@ function setupWorkspaces(apiKey) {
             } else {
                 for (let i = 0; i < workspaces.length; i++) {
                     workspaceSelect.options.add(new Option(workspaces[i].name, workspaces[i].id, false, workspaces[i].default));
+                    console.log(workspaces[i].name, workspaces[i].default);
                 }
 
                 if (workspaceSelect.selectedIndex === 0 && workspaces.length === 1) {
@@ -429,17 +440,19 @@ function setupWorkspaces(apiKey) {
 function getDefaultTogglWorkspace(apiKey, workspaceFunction) {
     if (typeof (workspaceFunction) === "function") {
         return workspaceFunction(apiKey).then(function (workspaces, textStatus, response) {
-            let workspaceId = undefined;
-
             if (workspaces.length == 1) {
-                workspaceId = workspaces[0].id;
+                return workspaces[0].id;
             } else if (workspaces.length == 0) {
                 setError("Unable to find a Toggl workspace");
             } else {
-                setError("More than one Toggl workspace exists");
-            }
+                let workspaceId = "";
 
-            return workspaceId;
+                for (let i = 0; i < workspaces.length; i++) {
+                    workspaceId = workspaceId + "|" + workspaces[i].id;
+                }
+
+                return workspaceId.substring(1);
+            }
         }, function (response, textStatus, errorThrown) {
             if (response.status === 403) {
                 setError("Unable to login to Toggl.  Please verify API Key.");
@@ -459,10 +472,17 @@ function getSelectedTogglWorkspace() {
     return new Promise(function (resolve) {
         let workspaceSelect = document.getElementById("workspace");
         if (workspaceSelect) {
-            if (workspaceSelect.selectedIndex === 0) {
+            let workspaces = [];
+
+            for (let i = 0; i < workspaceSelect.options.length; i++) {
+                if (workspaceSelect.options[i].selected) {
+                    workspaces.push({ name: workspaceSelect.options[i].text, id: workspaceSelect.options[i].value })
+                }
+            }
+            if (workspaces.length === 0) {
                 setError("Please select a workspace");
             } else {
-                return resolve([ { name: workspaceSelect.options[workspaceSelect.selectedIndex].text, id: workspaceSelect.options[workspaceSelect.selectedIndex].value } ]);
+                return resolve(workspaces);
             }
         } else {
             setError("Error gettings workspace");
@@ -705,7 +725,20 @@ function getTimesheetData(apiKey, userId, workspaceId, timesheetDataMethod, star
         }).then(function (endDate) {
             endDate = (endDate === "") ? getEndDate(startDate) : new Date(endDate);
     
-            return timesheetDataMethod(apiKey, userId, workspaceId, startDate, endDate, 1);
+            let workspaces = workspaceId.split("|");
+            let timesheetData = [];
+            let timesheetPromise = Promise.resolve();
+
+            for (let i = 0; i < workspaces.length; i++) {
+                timesheetPromise = timesheetPromise.then(function() {
+                    return timesheetDataMethod(apiKey, userId, workspaces[i], startDate, endDate, 1);
+                }).then(function(data) {
+                    timesheetData = timesheetData.concat(data);
+                    return timesheetData;
+                });
+            }
+
+            return timesheetPromise;
         });
     }
 }
