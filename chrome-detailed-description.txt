@@ -1,6 +1,6 @@
 Are you using Oracle's OpenAir product to enter timesheets?  Creating timesheets can be very laborious.  Doing so is much easier when you combine the Toggl time tracking application with the the Toggl to OpenAir Timesheets (T2OT) Chrome extension.
 
-Toggl makes time tracking easy with its various application forms: desktop, mobile, and web.  Seriously, I tried notebooks, Microsoft Outlook, even my own custom application, and nothing made it easier than Toggl.  You may check out Toggl at their website:  https://toggl.com.
+Toggl makes time tracking easy with its various application forms: desktop, mobile, and web.  Seriously, I tried notebooks, Microsoft Outlook, even my own custom application, and nothing made it easier than Toggl.  You may check out Toggl at their website:  https://track.toggl.com/.
 
 With Toggl keeping track of your time, T2OT makes creating a timesheet as simple as clicking a button. . .seriously. . .well maybe two buttons.  Using existing OpenAir timesheets, T2OT allows you to import the projects and tasks into Toggl.  This makes getting started with Toggl a breeze and makes for better integration to OpenAir.
 
@@ -18,7 +18,7 @@ PRE-REQUISITES
 
 This requires the following to be useful:
 
-- Toggl for tracking your time (https://toggl.com)
+- Toggl for tracking your time (https://track.toggl.com/)
 
 - OpenAir for submitting a timesheet (https://www.openair.com)
 
