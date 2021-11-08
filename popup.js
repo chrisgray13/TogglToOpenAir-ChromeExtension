@@ -780,7 +780,7 @@ function getTogglReportDetails(apiKey, userId, workspaceId, startDate, endDate, 
 
 function getTogglReportDetailsByPage(apiKey, userId, workspaceId, startDate, endDate, page) {
 
-    return getTogglData("https://toggl.com/reports/api/v2/details?workspace_id=" + workspaceId +
+    return getTogglData("https://api.track.toggl.com/reports/api/v2/details?workspace_id=" + workspaceId +
         "&user_agent=toggle_to_openair&user_ids=" + userId +
         "&since=" + startDate.toISOString().substring(0, 10) +
         "&until=" + endDate.toISOString().substring(0, 10) +
