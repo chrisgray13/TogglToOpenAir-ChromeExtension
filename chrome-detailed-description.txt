@@ -43,7 +43,7 @@ IMPORTING OPENAIR PROJECTS AND TASKS INTO TOGGL:
 
 1) Go to OpenAir
 
-2) Open a completed timesheet
+2) Open a completed timesheet in the "Enter Time" view
 
 3) Click the TogglToOpenAir icon in the toolbar
 
@@ -53,7 +53,7 @@ IMPORTING OPENAIR PROJECTS AND TASKS INTO TOGGL:
 
 6) Specify the workspace if you have more than one
 
-7) Click the here link in the instructions
+7) Click the Import Projects link in the instructions
 
 8) Review response and verify the results
 
