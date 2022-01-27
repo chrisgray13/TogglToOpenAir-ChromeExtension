@@ -155,6 +155,21 @@ function getDay(date) {
     return new Date(date).getUTCDate();
 }
 
+function getSundayPosition() {
+    let hourColumnCtrls = document.querySelectorAll("th.timesheetFixedColumn span.weekDay");
+
+    if (hourColumnCtrls) {
+        for (let i = 0; i < hourColumnCtrls.length; i++) {
+            if (hourColumnCtrls[i].innerHTML.startsWith("Sun")) {
+                console.log("Found that Sunday is in position " + ++i + " on the timesheet");
+                return i;
+            }
+        }
+    }
+
+    return 7;
+}
+
 function getDayOfTheWeek(date, sundayPosition) {
     if (sundayPosition < 1 || sundayPosition > 7) {
         setError("Bad usage of sundayPosition in getDateOfTheWeek");
@@ -325,6 +340,7 @@ function findProjectTaskTimeTypeRow(mappings, project, alternateProject, task, a
 function createTimesheet(timesheetData, roundTime) {
     let mappings = getProjectTaskTimeTypeRowMappings();
     let row = (mappings.mappings.length || 0) + 1;
+    let sundayPosition = getSundayPosition();
 
     for (let projectTaskKey in timesheetData) {
         let projectTaskEntries = timesheetData[projectTaskKey];
@@ -337,7 +353,7 @@ function createTimesheet(timesheetData, roundTime) {
             if (roundedDuration <= 0.0) {
                 console.log("Skipping => ", dateEntry.start, dateEntry.client, dateEntry.project, dateEntry.description);
             } else {
-                addHours(timeEntryRow, getDayOfTheWeek(dateEntry.start, 7), getDay(dateEntry.start), roundedDuration, dateEntry.description.replace("'", "\\'"));
+                addHours(timeEntryRow, getDayOfTheWeek(dateEntry.start, sundayPosition), getDay(dateEntry.start), roundedDuration, dateEntry.description.replace("'", "\\'"));
             }
         }
 
