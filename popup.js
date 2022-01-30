@@ -673,8 +673,6 @@ function createProjects(projectsToCopy, clientId, apiKey, workspaceId, i) {
 }
 
 function changeProjects(projectsToChange, apiKey, stats, i) {
-
-
     if (i === undefined) {
         i = 0;
     }
