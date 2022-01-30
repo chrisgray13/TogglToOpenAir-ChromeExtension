@@ -154,6 +154,7 @@ function addDeleteButtonsByDay() {
 
 function deleteDaysTimeEntries(event) {
     var dayOfWeek = 8 - parseInt(event.currentTarget.id.substring(9));
+    let columnOffset = getTimeStartColumnPosition() - 1;
 
     setOpenAirNotificationVisibility(true, "Deleting time entries!  Takes about 10 seconds.");
 
@@ -162,7 +163,7 @@ function deleteDaysTimeEntries(event) {
         let i;
 
         for (i = 1; i < numberOfRows; i++) {
-            addHours(i, dayOfWeek, undefined, "", "");
+            addHours(i, columnOffset, dayOfWeek, undefined, "", "");
         }
         
         setOpenAirNotificationVisibility(false, "");
@@ -253,6 +254,17 @@ function getTimesheetDateRange() {
     }
 
     return { startDate: startDate, endDate: endDate };
+}
+
+function getTimeStartColumnPosition() {
+    let startColumnCtrl = controls.getFirstTimesheetDataHoursColumnInput();
+
+    if (startColumnCtrl) {
+        return parseInt(startColumnCtrl.id.substring(controls.timesheetElementRowFormat.length - 4).split("_")[0]);
+    } else {
+        console.log("Unable to find timesheet data hours start column input.  Returning default => 4");
+        return 4;
+    }
 }
 
 function getFirstEmptyTimeEntryDayOfTheWeek() {
@@ -380,6 +392,7 @@ function createTimesheet(timesheetData, roundTime) {
     let mappings = getProjectTaskTimeTypeRowMappings();
     let row = (mappings.mappings.length || 0) + 1;
     let sundayPosition = getSundayPosition();
+    let columnOffset = getTimeStartColumnPosition() - 1;
 
     for (let projectTaskKey in timesheetData) {
         let projectTaskEntries = timesheetData[projectTaskKey];
@@ -392,7 +405,7 @@ function createTimesheet(timesheetData, roundTime) {
             if (roundedDuration <= 0.0) {
                 console.log("Skipping => ", dateEntry.start, dateEntry.client, dateEntry.project, dateEntry.description);
             } else {
-                addHours(timeEntryRow, getDayOfTheWeek(dateEntry.start, sundayPosition), getDay(dateEntry.start), roundedDuration, dateEntry.description.replace("'", "\\'"));
+                addHours(timeEntryRow, columnOffset, getDayOfTheWeek(dateEntry.start, sundayPosition), getDay(dateEntry.start), roundedDuration, dateEntry.description.replace("'", "\\'"));
             }
         }
 
@@ -577,9 +590,9 @@ function stripTask(strippedTask) {
     }
 }
 
-function addHours(row, dayOfWeek, day, hours, description) {
+function addHours(row, columnOffset, dayOfWeek, day, hours, description) {
     let hoursAdded = false;
-    let dateColumn = dayOfWeek + 3;
+    let dateColumn = dayOfWeek + columnOffset;
 
     let setDescription = function () {
         let descSet = false;
@@ -607,7 +620,7 @@ function addHours(row, dayOfWeek, day, hours, description) {
         }
     };
 
-    let dateHeaderCtrl = controls.getMonthDayHourHeader(11 - dateColumn);
+    let dateHeaderCtrl = controls.getMonthDayHourHeader(8 - dayOfWeek);
     if ((day == undefined) || (dateHeaderCtrl.textContent == day)) {
         let hoursCtrl = controls.getHours(row, dateColumn);
         if (hoursCtrl) {
