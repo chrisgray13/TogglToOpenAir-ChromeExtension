@@ -24,6 +24,8 @@ var controls = {
     
     getNotesDescription: function() { return document.getElementById("tm_desc"); },
     
+    getNotesNotes: function() { return document.getElementById("tm_notes"); },
+    
     getNotesOkButton: function() { return document.querySelector(".btn-oa.dialogOkButton"); },
     
     getWeekDayHourHeader: function(i) { return document.querySelector("th.timesheetFixedColumn" + i + " span.weekDay"); },
@@ -602,9 +604,13 @@ function addHours(row, columnOffset, dayOfWeek, day, hours, description) {
         if (noteCtrl) {
             noteCtrl.click();
             // Set the description
-            let descCtrl = controls.getNotesDescription();
-            if (descCtrl) {
-                descCtrl.value = description;
+            let notesInput = controls.getNotesDescription();
+            if (!notesInput) {
+                notesInput = controls.getNotesNotes();
+            }
+
+            if (notesInput) {
+                notesInput.value = description;
 
                 // Click the OK button
                 let okBtn = controls.getNotesOkButton();
