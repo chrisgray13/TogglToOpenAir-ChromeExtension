@@ -489,24 +489,27 @@ function getTaskInfoFromTimesheet(row) {
 
 function setTaskInfoInTimesheet(row, project, alternateProject, task, alternateTask, timeType) {
     let selectOption = function (selectId, selectValue) {
-        let selected = false;
+        let result = { matched: false, present: false, success: false };
         let selectCtrl = document.getElementById(selectId);
         if (selectCtrl) {
+            result.present = true;
+
             // let xpath = "//option[contains(text(), '" + selectValue + "')]";
             // let matchingElement = document.evaluate(xpath, selectCtrl, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
             let matchingElement = selectOptionForControl(selectCtrl, selectValue);
 
             if (matchingElement) {
                 matchingElement.selected = true;
+                result.matched = true;
                 console.log("Here is the option found => ", selectId, selectValue, matchingElement.textContent, matchingElement.value);
                 if ("createEvent" in document) {
                     var evt = document.createEvent("HTMLEvents");
                     if (evt) {
                         evt.initEvent("change", true, false);
-                        selected = selectCtrl.dispatchEvent(evt);
+                        result.success = selectCtrl.dispatchEvent(evt);
                     }
                 } else if ("fireEvent" in selectCtrl) {
-                    selectCtrl.fireEvent("onchange");
+                    result.success = selectCtrl.fireEvent("onchange");
                 } else {
                     console.log("Not sure how to call change on this select => ", selectId, selectValue);
                 }
@@ -517,25 +520,25 @@ function setTaskInfoInTimesheet(row, project, alternateProject, task, alternateT
             console.log("Could not find control => ", selectId);
         }
 
-        return selected;
+        return result;
     };
 
     console.log("Setting project and task on row => ", project, task, row);
 
-    let skipTask = false;
-
     // Set the Project
+    let projectResult;
     if (alternateProject) {
-        if (!selectOption(controls.getProjectId(row), alternateProject)) {
-            if (!selectOption(controls.getProjectId(row), project)) {
+        projectResult = selectOption(controls.getProjectId(row), alternateProject);
+        if (!projectResult.success) {
+            projectResult = selectOption(controls.getProjectId(row), project);
+            if (!projectResult.success) {
                 setError("Unable to set project on row " + row + " for " + project);
-                skipTask = true;
             }
         }
     } else if (project) {
-        if (!selectOption(controls.getProjectId(row), project)) {
+        projectResult = selectOption(controls.getProjectId(row), project);
+        if (!projectResult.success) {
             setError("Unable to set project on row " + row + " for " + project);
-            skipTask = true;
         }
     } else {
         setError("Project missing for row ", row);
@@ -544,11 +547,11 @@ function setTaskInfoInTimesheet(row, project, alternateProject, task, alternateT
     }
 
     // Set the Task
-    if (!skipTask) {
+    if (projectResult.success) {
         if (task) {
-            if (!selectOption(controls.getTaskId(row), task)) {
+            if (!selectOption(controls.getTaskId(row), task).success) {
                 if (alternateTask) {
-                    if (!selectOption(controls.getTaskId(row), alternateTask)) {
+                    if (!selectOption(controls.getTaskId(row), alternateTask).success) {
                         setError("Unable to set task on row " + row + " for " + alternateTask);
                     }
                 } else {
@@ -562,9 +565,12 @@ function setTaskInfoInTimesheet(row, project, alternateProject, task, alternateT
         }
     }
 
-    // Set the Time type
-    if (!selectOption(controls.getTimeTypeId(row), timeType)) {
-        setError("Unable to set time type on row ", row);
+    // Set the Time Type:  time type is optional, so do not present an error
+    let timeTypeResult = selectOption(controls.getTimeTypeId(row), timeType);
+    if (!timeTypeResult.success) {
+        if (timeTypeResult.present && timeTypeResult.matched) {
+            setError("Unable to set time type on row ", row);
+        }
     }
 }
 
