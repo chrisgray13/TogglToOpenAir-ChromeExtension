@@ -5,46 +5,99 @@ var elements = {
     },
 };
 
-var controls = {
-    timesheetElementRowFormat: "ts_c#_r#",
-    
-    getLoadingImage: function() { return document.getElementById("loadingImage"); },
-    
-    getTimesheetDateRange: function() { return document.getElementById("timesheet_data_range"); },
-    
-    getTimesheetDataRows: function() { return document.querySelectorAll("table.timesheet tbody tr"); },
-    
-    getFirstTimesheetDataHoursColumnInput: function() { return document.querySelector("table.timesheet tbody td.timesheetHoursFirst input"); },
-    
-    getWeekdayHourHeaders: function() { return document.querySelectorAll("th.timesheetFixedColumn span.weekDay"); },
-    
-    getTimesheetDataLastRow: function() { return document.querySelector("table.timesheet tbody tr.gridDataEmptyRow select"); },
-    
-    getTimesheetDataHourInputs: function() { return document.getElementsByClassName("timesheetInputHour"); },
-    
-    getNotesDescription: function() { return document.getElementById("tm_desc"); },
-    
-    getNotesNotes: function() { return document.getElementById("tm_notes"); },
-    
-    getNotesOkButton: function() { return document.querySelector(".btn-oa.dialogOkButton"); },
-    
-    getWeekDayHourHeader: function(i) { return document.querySelector("th.timesheetFixedColumn" + i + " span.weekDay"); },
+var controls = getControls();
 
-    getMonthDayHourHeader: function(i) { return document.querySelector("th.timesheetFixedColumn" + i + " span.monthDay"); },
-    
-    getProject: function(row) { return document.getElementById("ts_c1_r" + row); },
-    getProjectId: function(row) { return "ts_c1_r" + row; },
+function getControls() {
 
-    getTask: function(row) { return document.getElementById("ts_c2_r" + row); },
-    getTaskId: function(row) { return "ts_c2_r" + row; },
+    return getOldUIControls();
+}
 
-    getTimeType: function(row) { return document.getElementById("ts_c3_r" + row); },
-    getTimeTypeId: function(row) { return "ts_c3_r" + row; },
+function getOldUIControls() {
+    return {
+        timesheetElementRowFormat: "ts_c#_r#",
+        
+        getLoadingImage: function() { return document.getElementById("loadingImage"); },
+        
+        getTimesheetDateRange: function() { return document.getElementById("timesheet_data_range"); },
+        
+        getTimesheetDataRows: function() { return document.querySelectorAll("table.timesheet tbody tr"); },
+        
+        getFirstTimesheetDataHoursColumnInput: function() { return document.querySelector("table.timesheet tbody td.timesheetHoursFirst input"); },
+        
+        getWeekdayHourHeaders: function() { return document.querySelectorAll("th.timesheetFixedColumn span.weekDay"); },
+        
+        getTimesheetDataLastRow: function() { return document.querySelector("table.timesheet tbody tr.gridDataEmptyRow select"); },
+        
+        getTimesheetDataHourInputs: function() { return document.getElementsByClassName("timesheetInputHour"); },
+        
+        getNotesDescription: function() { return document.getElementById("tm_desc"); },
+        
+        getNotesNotes: function() { return document.getElementById("tm_notes"); },
+        
+        getNotesOkButton: function() { return document.querySelector(".btn-oa.dialogOkButton"); },
+        
+        getWeekDayHourHeader: function(i) { return document.querySelector("th.timesheetFixedColumn" + i + " span.weekDay"); },
 
-    getHours: function(row, col) { return document.getElementById("ts_c" + col + "_r" + row); },
+        getMonthDayHourHeader: function(i) { return document.querySelector("th.timesheetFixedColumn" + i + " span.monthDay"); },
+        
+        getProject: function(row) { return document.getElementById("ts_c1_r" + row); },
+        getProjectId: function(row) { return "ts_c1_r" + row; },
 
-    getNotes: function(row, col) { return document.getElementById("ts_notes_c" + col + "_r" + row); },
-};
+        getTask: function(row) { return document.getElementById("ts_c2_r" + row); },
+        getTaskId: function(row) { return "ts_c2_r" + row; },
+
+        getTimeType: function(row) { return document.getElementById("ts_c3_r" + row); },
+        getTimeTypeId: function(row) { return "ts_c3_r" + row; },
+
+        getHours: function(row, col) { return document.getElementById("ts_c" + col + "_r" + row); },
+
+        getNotes: function(row, col) { return document.getElementById("ts_notes_c" + col + "_r" + row); },
+    };
+}
+
+function getNewUIControls() {
+    // Not ready for prime-time
+    return {
+        timesheetElementRowFormat: "ts_c#_r#",
+        
+        getLoadingImage: function() { return document.getElementById("loadingImage"); },
+        
+        getTimesheetDateRange: function() { return document.getElementById("timesheet_data_range"); },
+        
+        getTimesheetDataRows: function() { return document.querySelectorAll("table.timesheet tbody tr"); },
+        
+        getFirstTimesheetDataHoursColumnInput: function() { return document.querySelector("table.timesheet tbody td.timesheetHoursFirst input"); },
+        
+        getWeekdayHourHeaders: function() { return document.querySelectorAll("th.timesheetFixedColumn span.weekDay"); },
+        
+        getTimesheetDataLastRow: function() { return document.querySelector("table.timesheet tbody tr.gridDataEmptyRow select"); },
+        
+        getTimesheetDataHourInputs: function() { return document.getElementsByClassName("timesheetInputHour"); },
+        
+        getNotesDescription: function() { return document.getElementById("tm_desc"); },
+        
+        getNotesNotes: function() { return document.getElementById("tm_notes"); },
+        
+        getNotesOkButton: function() { return document.querySelector(".btn-oa.dialogOkButton"); },
+        
+        getWeekDayHourHeader: function(i) { return document.querySelector("th.timesheetFixedColumn" + i + " span.weekDay"); },
+
+        getMonthDayHourHeader: function(i) { return document.querySelector("th.timesheetFixedColumn" + i + " span.monthDay"); },
+        
+        getProject: function(row) { return document.getElementById("ts_c1_r" + row); },
+        getProjectId: function(row) { return "ts_c1_r" + row; },
+
+        getTask: function(row) { return document.getElementById("ts_c2_r" + row); },
+        getTaskId: function(row) { return "ts_c2_r" + row; },
+
+        getTimeType: function(row) { return document.getElementById("ts_c3_r" + row); },
+        getTimeTypeId: function(row) { return "ts_c3_r" + row; },
+
+        getHours: function(row, col) { return document.getElementById("ts_c" + col + "_r" + row); },
+
+        getNotes: function(row, col) { return document.getElementById("ts_notes_c" + col + "_r" + row); },
+    };
+}
 
 var roundTimeEnum = { all: 0, billable: 1, none: 2 };
 
