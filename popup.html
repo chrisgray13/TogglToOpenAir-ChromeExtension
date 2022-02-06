@@ -4,7 +4,7 @@
         <style>
             body {
                 width: 460px;
-                height: 535px;
+                height: 575px;
                 font-family: "Verdana", sans-serif;
                 padding: 0px 10px 15px 10px;
                 margin: 0px 0px 0px 0px;
@@ -126,6 +126,13 @@
                 <option value="0">All time (nearest 15 mins)</option>
                 <option value="1">Billable only (round up to nearest 15 mins)</option>
                 <option value="2">None</option>
+            </select>
+            <label for="descriptionField">Description Field:</label>
+            <select id="descriptionField" placeholder="Description Field">
+                <option value="0">Description (textbox)</option>
+                <option value="1">Notes (textarea)</option>
+                <option value="2">Description & Notes</option>
+                <option value="3">None</option>
             </select>
             <div class="group">
                 <div>

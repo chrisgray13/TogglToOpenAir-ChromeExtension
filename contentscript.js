@@ -100,6 +100,7 @@ function getNewUIControls() {
 }
 
 var roundTimeEnum = { all: 0, billable: 1, none: 2 };
+var descriptionFieldEnum = { description: 0, notes: 1, both: 2, none: 3 };
 
 var errors;
 var errorCount;
@@ -160,7 +161,7 @@ function setOpenAirNotificationVisibility(visibility, message) {
 
             sendResponse({ success: true });
         } else if (request.action === "loadTimesheetData") {
-            createTimesheet(request.data.timesheetData, request.data.roundTime);
+            createTimesheet(request.data.timesheetData, request.data.roundTime, request.data.descriptionField);
 
             sendResponse({
                 success: errorCount === 0,
@@ -218,7 +219,12 @@ function deleteDaysTimeEntries(event) {
         let i;
 
         for (i = 1; i < numberOfRows; i++) {
-            addHours(i, columnOffset, dayOfWeek, undefined, "", "");
+            addHours(
+                i,
+                { "columnOffset": columnOffset, "dayOfWeek": dayOfWeek, "dayOfMonth": undefined },
+                "",
+                { "field": descriptionFieldEnum.both, "value": "" }
+            );
         }
         
         setOpenAirNotificationVisibility(false, "");
@@ -252,7 +258,7 @@ function roundDuration(duration, isBillable, roundTime) {
     }
 }
 
-function getDay(date) {
+function getDayOfMonth(date) {
     return new Date(date).getUTCDate();
 }
 
@@ -443,7 +449,7 @@ function findProjectTaskTimeTypeRow(mappings, project, alternateProject, task, a
     return undefined;
 }
 
-function createTimesheet(timesheetData, roundTime) {
+function createTimesheet(timesheetData, roundTime, descriptionField) {
     let mappings = getProjectTaskTimeTypeRowMappings();
     let row = (mappings.mappings.length || 0) + 1;
     let sundayPosition = getSundayPosition();
@@ -460,7 +466,12 @@ function createTimesheet(timesheetData, roundTime) {
             if (roundedDuration <= 0.0) {
                 console.log("Skipping => ", dateEntry.start, dateEntry.client, dateEntry.project, dateEntry.description);
             } else {
-                addHours(timeEntryRow, columnOffset, getDayOfTheWeek(dateEntry.start, sundayPosition), getDay(dateEntry.start), roundedDuration, dateEntry.description.replace("'", "\\'"));
+                addHours(
+                    timeEntryRow,
+                    { "columnOffset": columnOffset, "dayOfWeek": getDayOfTheWeek(dateEntry.start, sundayPosition), "dayOfMonth": getDayOfMonth(dateEntry.start) },
+                    roundedDuration,
+                    { "field": descriptionField, "value": dateEntry.description.replace("'", "\\'") }
+                );
             }
         }
 
@@ -651,9 +662,9 @@ function stripTask(strippedTask) {
     }
 }
 
-function addHours(row, columnOffset, dayOfWeek, day, hours, description) {
+function addHours(row, day, hours, description) {
     let hoursAdded = false;
-    let dateColumn = dayOfWeek + columnOffset;
+    let dateColumn = day.dayOfWeek + day.columnOffset;
 
     let setDescription = function () {
         let descSet = false;
@@ -663,30 +674,42 @@ function addHours(row, columnOffset, dayOfWeek, day, hours, description) {
         if (noteCtrl) {
             noteCtrl.click();
             // Set the description
-            let notesInput = controls.getNotesDescription();
-            if (!notesInput) {
-                notesInput = controls.getNotesNotes();
+            let notesInput = undefined;
+
+            if (description.field === descriptionFieldEnum.none) {
+                descSet = true;
+            } else {
+                if ((description.field === descriptionFieldEnum.description) || (description.field === descriptionFieldEnum.both)) {
+                    notesInput = controls.getNotesDescription();
+                    if (notesInput) {
+                        notesInput.value = description.value;
+                        descSet = true;
+                    }
+                }
+    
+                if (!notesInput /* Set notes if description was not found */ || (description.field === descriptionFieldEnum.notes) || (description.field === descriptionFieldEnum.both)) {
+                    notesInput = controls.getNotesNotes();
+                    if (notesInput) {
+                        notesInput.value = description.value;
+                        descSet = true;
+                    }
+                }
             }
 
-            if (notesInput) {
-                notesInput.value = description;
-
-                // Click the OK button
-                let okBtn = controls.getNotesOkButton();
-                if (okBtn) {
-                    okBtn.click();
-                    descSet = true;
-                }
+            // Click the OK button
+            let okBtn = controls.getNotesOkButton();
+            if (okBtn) {
+                okBtn.click();
             }
         }
         
         if (!descSet) {
-            setError("Unable to set the description for (row, dayOfWeek, day, hours, description) => ", row, dayOfWeek, day, hours, description);
+            setError("Unable to set the description for (row, dayOfWeek, dayOfMonth, hours, description) => ", row, day.dayOfWeek, day.dayOfMonth, hours, description.value);
         }
     };
 
-    let dateHeaderCtrl = controls.getMonthDayHourHeader(8 - dayOfWeek);
-    if ((day == undefined) || (dateHeaderCtrl.textContent == day)) {
+    let dateHeaderCtrl = controls.getMonthDayHourHeader(8 - day.dayOfWeek);
+    if ((day.dayOfMonth == undefined) || (dateHeaderCtrl.textContent == day.dayOfMonth)) {
         let hoursCtrl = controls.getHours(row, dateColumn);
         if (hoursCtrl) {
             hoursCtrl.value = hours;
@@ -708,11 +731,11 @@ function addHours(row, columnOffset, dayOfWeek, day, hours, description) {
             console.log("Unable to find hours control");
         }
     } else {
-        console.log("Day and Date column do not match => ", day, dateColumn)
+        console.log("Day of month and Date column do not match => ", day.dayOfMonth, dateColumn)
     }
     
     if (!hoursAdded) {
-        setError("Unable to add hours for (row, dayOfWeek, day, hours, description) => ", row, dayOfWeek, day, hours, description)
+        setError("Unable to add hours for (row, dayOfWeek, dayOfMonth, hours, description) => ", row, day.dayOfWeek, day.dayOfMonth, hours, description.value)
     }
 }
 

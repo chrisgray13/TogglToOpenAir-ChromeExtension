@@ -1,4 +1,5 @@
 var roundTimeEnum = { all: 0, billable: 1, none: 2 };
+var descriptionFieldEnum = { description: 0, notes: 1, both: 2, none: 3 };
 
 var cancellationToken;
 
@@ -88,6 +89,20 @@ function handlePromiseTransaction(work) {
         }
 
         roundTimeInput.selectedIndex = roundTimeValue;
+    });
+})();
+
+(function setupDescriptionField() {
+    let descriptionFieldInput = document.getElementById("descriptionField");
+    descriptionFieldInput.addEventListener("change", function () {
+        chrome.storage.sync.set({
+            descriptionField: descriptionFieldInput.options[descriptionFieldInput.selectedIndex].value
+        });
+    });
+
+    chrome.storage.sync.get("descriptionField", function (data) {
+        let descriptionFieldValue = data.descriptionField || descriptionFieldEnum.description;
+        descriptionFieldInput.selectedIndex = descriptionFieldValue;
     });
 })();
 
@@ -198,10 +213,13 @@ function handlePromiseTransaction(work) {
 
                 let aggregatedTimesheetData = aggregateTimesheetData(timesheetData, groupByTask, timeEntryHandler.getDuration);
 
+                let descriptionFieldInput = document.getElementById("descriptionField");
+                let descriptionField = descriptionFieldInput.selectedIndex;
+
                 let roundTimeInput = document.getElementById("roundTime");
                 let roundTime = roundTimeInput.selectedIndex;
 
-                return sendActionToContentScript("loadTimesheetData", { "timesheetData": aggregatedTimesheetData, "roundTime": roundTime, "groupByTask": groupByTask });
+                return sendActionToContentScript("loadTimesheetData", { "timesheetData": aggregatedTimesheetData, "roundTime": roundTime, "descriptionField": descriptionField, "groupByTask": groupByTask });
             })).then(handlePromiseTransaction(function (response) {
                 if (response === undefined) {
                     setError("Unable to determine the response for sendTimesheetData");
