@@ -330,24 +330,27 @@ function getTimeStartColumnPosition() {
 
 function getFirstEmptyTimeEntryDayOfTheWeek() {
     let timeCtrls = controls.getTimesheetDataHourInputs();
-    let lastDayWithTimeEntries = 0;
+    let lastDayWithTimeEntriesColumnIndex = 0;
+    let lastDayColumnIndex = 0;
 
     if (timeCtrls.length == 0) {
         console.log("Unable to find any timesheet hour input controls");
     } else {
         for (let i = 0, length = timeCtrls.length; i < length; i++) {
+            lastDayColumnIndex = Math.max(lastDayColumnIndex, timeCtrls[i].id.substring(4).split("_")[0]);
+
             if (timeCtrls[i].value != "") {
-                lastDayWithTimeEntries = Math.max(lastDayWithTimeEntries, timeCtrls[i].id.substring(4).split("_")[0]);
+                lastDayWithTimeEntriesColumnIndex = Math.max(lastDayWithTimeEntriesColumnIndex, timeCtrls[i].id.substring(4).split("_")[0]);
             }
         }
     }
 
-    if (lastDayWithTimeEntries === 0) {
-        return 0;
-    } else if (lastDayWithTimeEntries === 10) {
-        return -1;
+    if (lastDayWithTimeEntriesColumnIndex === 0) {
+        return 0; // No time entered
+    } else if (lastDayWithTimeEntriesColumnIndex === lastDayColumnIndex) {
+        return -1; // No empty days
     } else {
-        return lastDayWithTimeEntries - 2;
+        return lastDayWithTimeEntriesColumnIndex - (lastDayColumnIndex - 8 /* Number of days in a week plus 1 to generate first empty day */);
     }
 }
 
