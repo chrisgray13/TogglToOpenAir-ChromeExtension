@@ -511,12 +511,14 @@ function getTaskInfoFromDateEntry(projectTaskTimeTypeHash) {
 
 function selectOptionForControl(selectCtrl, optionValue) {
     let matchingElement;
-
-    for (let i = 0, optionsLength = selectCtrl.options.length; i < optionsLength; i++) {
-        if (selectCtrl.options[i].textContent.indexOf(optionValue) > -1) {
-            selectCtrl.selectedIndex = i;
-            matchingElement = selectCtrl.options[i];
-            break;
+    // Check to see if options exist before getting the length
+    if (selectCtrl.options) {
+        for (let i = 0, optionsLength = selectCtrl.options.length; i < optionsLength; i++) {
+            if (selectCtrl.options[i].textContent.indexOf(optionValue) > -1) {
+                selectCtrl.selectedIndex = i;
+                matchingElement = selectCtrl.options[i];
+                break;
+            }
         }
     }
 
