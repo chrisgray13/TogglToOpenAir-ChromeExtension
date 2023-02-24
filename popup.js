@@ -3,6 +3,7 @@ var descriptionFieldEnum = { description: 0, notes: 1, both: 2, none: 3 };
 
 var cancellationToken;
 
+var delim = "||||".toString()
 function startPromiseTransaction() {
     cancellationToken = false;
 }
@@ -813,9 +814,9 @@ function getTogglTimeEntries(apiKey, userId, workspaceId, startDate, endDate) {
 
 function generateAggregateKey(entry, groupByTask) {
     if (groupByTask) {
-        return entry.client + "|" + entry.project + "|" + entry.is_billable.toString();
+        return entry.client + delim + entry.project + delim + entry.is_billable.toString();
     } else {
-        return entry.client + "|" + entry.project + "|" + entry.is_billable.toString() + "|" + entry.description;
+        return entry.client + delim + entry.project + delim + entry.is_billable.toString() + delim + entry.description;
     }
 }
 

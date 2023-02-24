@@ -7,6 +7,8 @@ var elements = {
 
 var controls = getControls();
 
+const delim = "||||".toString()
+
 function getControls() {
 
     return getOldUIControls();
@@ -407,7 +409,7 @@ function getProjectTaskTimeTypeRowMappings() {
 }
 
 function getProjectTaskTimeTypeHash(project, task, timeType) {
-    return project + "|" + task + "|" + timeType;
+    return project + delim + task + delim + timeType;
 }
 
 function findProjectTaskTimeTypeRow(mappings, project, alternateProject, task, alternateTask, timeType) {
@@ -491,7 +493,7 @@ function createTimesheet(timesheetData, roundTime, descriptionField) {
 }
 
 function getTaskInfoFromDateEntry(projectTaskTimeTypeHash) {
-    let hashPieces = projectTaskTimeTypeHash.split("|");
+    let hashPieces = projectTaskTimeTypeHash.split(delim.toString());
 
     // Used to find tasks that are labeled Billable
     // E.g. Billable task, billable task, my task - billable, my task [Billable]
