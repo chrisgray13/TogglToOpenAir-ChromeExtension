@@ -513,12 +513,15 @@ function getTaskInfoFromDateEntry(projectTaskTimeTypeHash) {
 
 function selectOptionForControl(selectCtrl, optionValue) {
     let matchingElement;
-
-    for (let i = 0, optionsLength = selectCtrl.options.length; i < optionsLength; i++) {
-        if (selectCtrl.options[i].textContent.indexOf(optionValue) > -1) {
-            selectCtrl.selectedIndex = i;
-            matchingElement = selectCtrl.options[i];
-            break;
+    // We want to make sure that the options property _exists_ before we look for anything to do with it
+    if (selectCtrl.options) {
+        // Iterate through the various options that may exist, and look for the one we care about
+        for (let i = 0, optionsLength = selectCtrl.options.length; i < optionsLength; i++) {
+            if (selectCtrl.options[i].textContent.indexOf(optionValue) > -1) {
+                selectCtrl.selectedIndex = i;
+                matchingElement = selectCtrl.options[i];
+                break;
+            }
         }
     }
 
